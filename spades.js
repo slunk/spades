@@ -132,8 +132,6 @@ this.Game = function () {
      * return list of server actions
      */
     this.bid = function (team, bid) {
-        console.log("BID");
-        console.log(bid);
         var serverActions = [];
         if (this.roundInfo[team].bid.blind) {
             serverActions.push({action: SERVER_ACTION.SEND_CARDS, recipient: {team: team, player: "player0"}, data: this[team].player0.cards});
@@ -148,7 +146,6 @@ this.Game = function () {
         this.roundInfo[team].bid.mult = bid.mult;
         if (!this.bidsIn()) {
             this.rotateTeam();
-            console.log(this.currTeam);
             serverActions.push({action: SERVER_ACTION.PROMPT_BID, recipient: this.currTeam, data: null});
             return serverActions;
         }

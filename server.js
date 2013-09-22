@@ -88,16 +88,15 @@ io.sockets.on('connection', function (socket) {
             , bid = data
             , tmsocket = players[team][teammate(player)];
         updateAll('msg', {name: "server", text: users[socket.id].name + " wants to bid " + data});
+        tmsocket.removeAllListeners("bidAccept");
         tmsocket.emit("bidAccept", bid);
         tmsocket.on("bidAccept", function (data) {
             if (data.accept) {
                 updateAll('msg', {name: "server", text: users[tmsocket.id].name + " accepts."});
                 var messages = game.bid(team, spades.bidActions[bid]);
                 messages.forEach(sendMessage);
-                tmsocket.removeAllListeners("bidAccept");
             } else {
                 updateAll('msg', {name: "server", text: users[tmsocket.id].name + " declines."});
-                tmsocket.removeAllListeners("bidAccept");
             }
         });
     });

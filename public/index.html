@@ -65,6 +65,8 @@
     });
 
     socket.on('bidAccept', function (data) {
+        $('#accept').remove();
+        $('#decline').remove();
         console.log('bid accept received');
         $('#chattext').append("<span id=\"accept\">Yes</span> <span id=\"decline\">No</span>");
         $('#accept').click(function () {
