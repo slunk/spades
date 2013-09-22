@@ -7,7 +7,7 @@ var connect = require('connect')
 
 app = http.createServer(connect().use(connect.static('public')));
 io = socketio.listen(app);
-app.listen(1337);
+app.listen(80);
 
 var users = {}
     , players = {team0: {}, team1: {}}
