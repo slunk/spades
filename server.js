@@ -7,6 +7,12 @@ var connect = require('connect')
 
 app = http.createServer(connect().use(connect.static('public')));
 io = socketio.listen(app);
+
+io.configure(function () { 
+    io.set("transports", ["xhr-polling"]); 
+    io.set("polling duration", 10); 
+});
+
 app.listen(process.env.PORT || 1337);
 
 var users = {}
