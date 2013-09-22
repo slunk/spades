@@ -1,0 +1,309 @@
+<head>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.4.3/jquery.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="card.js"></script>
+<script>
+    var socket = io.connect(window.location.hostname)
+        , cards = []
+        , player = null;
+
+    socket.on('sit', function (data) {
+        console.log(data);
+        $('#' + data.place + '-sitbtn')
+            .replaceWith("<div id=\"" + data.place + "-name\">" + data.user + "</div>");
+    });
+
+    var displayCard = function (card) {
+            var fname = card.imageFileName();
+            var id = card.id;
+            var n = cards.indexOf(card);
+            var style = "position:relative;z-index: " + n + ";";
+            style += "display:inline-block;height:150px;";
+            $("#cardcontainer").append("<img class=\"card\" name=\"" + id + "\" id=\"card-" + id + "\" src=\"images/" + fname + "\" style=\"" + style + "\"></img>");
+            $("#" + id).mouseover(function () {
+                $("#" + id).css("top", "-20px");
+            });
+            $("#" + id).mouseout(function () {
+                $("#" + id).css("top", "0px");
+            });
+            $("#" + id).click(function () {
+                cards.splice(n, 1);
+                $("#" + id).remove();
+                cards.slice(n, cards.length).forEach(function (card) {
+                    $("#" + card.id).remove();
+                    displayCard(card);
+                });
+            });
+    };
+
+    socket.on("PROMPT_BID", function (data) {
+        console.log('bid received');
+        $('.bidbtn').each(function () {
+            this.disabled = false;
+        });
+    });
+
+    socket.on("SEND_CARDS", function (data) {
+        cards = data.sort(function (a, b) {
+            return a.id - b.id;
+        }).map(function (card) {
+            return new Card(card.id);
+        });
+        console.log(cards);
+        var n = 0;
+        cards.forEach(function (card) {
+            displayCard(card);
+        });
+    });
+
+    socket.on('bidAccept', function (data) {
+        console.log('bid accept received');
+        $('#chattext').append("<span id=\"accept\">Yes</span> <span id=\"decline\">No</span>");
+        $('#accept').click(function () {
+            socket.emit("bidAccept", {accept: true});
+            $('#accept').remove();
+            $('#decline').remove();
+        });
+        $('#decline').click(function () {
+            socket.emit("bidAccept", {accept: false});
+            $('#accept').remove();
+            $('#decline').remove();
+        });
+        $('#chattext').scrollTop($('#chattext')[0].scrollHeight);
+    });
+
+    socket.on('PROMPT_PLAY', function (data) {
+        $('#chattext').append("<strong>Your turn!</strong><br>");
+        $('.card').mouseover(function (event) {
+            $(this).css("top", "-20px");
+        });
+        $('.card').mouseout(function () {
+            $(this).css("top", "0px");
+        });
+        $('.card').click(function (event) {
+            var id = +event.target.name;
+            console.log(id);
+            socket.emit("play", {card: id});
+            cards.splice(id, 1);
+            $('.card').unbind();
+            $(this).remove();
+            cards.slice(id, cards.length).forEach(function (card) {
+                $("#card-" + card.id).remove();
+                displayCard(card);
+            });
+        });
+    });
+
+    socket.on("play", function (data) {
+        var card = new Card(+data.card)
+            , fname = card.imageFileName()
+            , style = "height:150px;";
+        $("#" + data.team + "-" + data.player).append("<img src=\"images/" + fname + "\" style=\"" + style + "\"></img>");
+    });
+
+    socket.on('SEND_BOOK_WINNER', function (data) {
+        setTimeout(function () {
+            $('.temp').empty();
+            console.log(data.team);
+            console.log(data.books);
+            $('#books-' + data.team).text(data.books); 
+        }, 2000);
+    });
+
+    socket.on('SEND_SCORES', function (data) {
+        $('#score-team0').text(data.team0);
+        $('#score-team1').text(data.team1);
+    });
+
+    socket.on('msg', function (data) {
+        $('#chattext').append("<strong>" + data.name + ": </strong>" + data.text + "<br>");
+        $('#chattext').scrollTop($('#chattext')[0].scrollHeight);
+    });
+
+    $(document).ready(function () {
+        $('#appcontainer').hide();
+
+        $('#nicksubmit').click(function () {
+            var name = $('#nickinput').val();
+            socket.emit("setName", name);
+            $('#preliminary').hide();
+            $('#appcontainer').show();
+        });
+
+        $('#chatinput').bind("keypress", {}, function (e) {
+            var code = (e.keyCode ? e.keyCode : e.which);
+            if (code == 13) {
+                e.preventDefault();
+                socket.emit('msg', {text: $('#chatinput').val()});
+                $('#chatinput').val('');
+            }
+        });
+
+        $('.sitbtn').click(function (event) {
+            player = event.target.id.split("-").slice(0,2).join("-");
+            data = event.target.id.split("-");
+            $('.sitbtn').hide();
+            socket.emit("sit", {"team": data[0], "player": data[1]});
+        });
+
+        $('.bidbtn').click(function (event) {
+            var bid = event.target.id;
+            socket.emit("bid", bid);
+        });
+
+        $('#reset').click(function () {
+            socket.emit("reset");
+        });
+    });
+</script>
+<style>
+    #accept, #decline {
+        color: blue;
+        cursor: pointer;
+    }
+
+    .player {
+        text-align: center;
+    }
+
+    #game {
+        width: 740px;
+        height: 740px;
+    }
+
+    .card-container {
+        width: 100%;
+        float: left;
+    }
+
+    .player {
+        width: 218px;
+        height: 100%;
+        float: left;
+        border: 1px solid lightgray;
+    }
+
+    table {
+        text-align: center;
+        width: 100%;
+        height: 100%;
+        border-collapse: collapse;
+        border: 1px solid lightgray;
+    }
+
+    table th, td {
+        border: 1px solid lightgray;
+    }
+   
+    #chatinput {
+        height: 20%;
+        width: 100%;
+        text-align: left;
+        padding-left:0;
+        padding-top:0;
+        padding-bottom:0.4em;
+        padding-right: 0.4em;
+    }
+
+    .temp {
+        height: 250px;
+    }
+
+</style>
+</head>
+<body>
+    <div id="preliminary">
+        <input id="nickinput" type="text" placeholder="Nickname"></input>
+        <button id="nicksubmit">Submit</button>
+        <table>
+        </table>
+    </div>
+    <div id="appcontainer" style="width:100%;">
+    <div id="game" style="float:left;width:880px;height:100%;">
+        <div style="width:100%;height:270px;">
+
+        <div class="player" style="background-color:LightGrey;">
+            <div class="temp" id="team0-player0"></div>
+            <button class="sitbtn" id="team0-player0-sitbtn">Sit</button>
+        </div>
+        <div class="player" style="background-color:white;">
+            <div class="temp" id="team1-player0"></div>
+            <button class="sitbtn" id="team1-player0-sitbtn">Sit</button>
+        </div>
+        <div class="player" style="background-color:LightGrey;">
+            <div class="temp" id="team0-player1"></div>
+            <button class="sitbtn" id="team0-player1-sitbtn">Sit</button>
+        </div>
+        <div class="player" style="background-color:white;">
+            <div class="temp" id="team1-player1"></div>
+            <button class="sitbtn" id="team1-player1-sitbtn">Sit</button>
+        </div>
+
+        </div>
+        <div style="width:100%;height:300px;background-color:white;">
+            <div id="cardcontainer"></div>
+        </div>
+        <div id="bidding">
+            <strong>Bid:</strong>
+            <div id="bids">
+                <button class="bidbtn" id="show-cards" disabled>show cards</button>
+                <button class="bidbtn" id="board" disabled>board</button>
+                <button class="bidbtn" id="5" disabled>5</button>
+                <button class="bidbtn" id="6" disabled>6</button>
+                <button class="bidbtn" id="7" disabled>7</button>
+                <button class="bidbtn" id="8" disabled>8</button>
+                <button class="bidbtn" id="9" disabled>9</button>
+                <button class="bidbtn" id="2-for-10" disabled>2 for 10</button>
+                <button class="bidbtn" id="11" disabled>2 for 10</button>
+                <button class="bidbtn" id="12" disabled>2 for 10</button>
+                <button class="bidbtn" id="bid-boston" disabled>boston</button>
+            </div>
+        </div>
+    </div>
+    <div id="sidebar" style="float:left;width:300px;height:100%;background-color:white;">
+        <div id="scoreboard" style="height:25%;">
+            <table style="width:100%;">
+                <tr>
+                    <td></td>
+                    <td>Us</td>
+                    <td>Dem</td>
+                </tr>
+                <tr>
+                    <td>Score</td>
+                    <td id="score-team0">0</td>
+                    <td id="score-team1">0</td>
+                </tr>
+                <tr>
+                    <td>Books</td>
+                    <td id="books-team0"></td>
+                    <td id="books-team1"></td>
+                </tr>
+            </table>
+        </div>
+        <div id="chat" style="height:70%;">
+            <div id="chattext" style="height:80%;width:100%;border:1px solid #ccc;font:16px/26px Georgia, Garamond, Serif;overflow:scroll;"> </div>
+            <textarea id="chatinput" type="text" placeholder="Chat:"></textarea>
+        </div>
+        <button id="reset">Reset</button>
+    </div>
+    </div>
+<!--
+        <div class="player" style="width:740px;height=120px;background-color:green;">
+            <button class="sitbtn" id="team0-player0-sitbtn">Sit</button>
+            <div class="card-container" id="team0-player0-cards"></div>
+        </div>
+        <div class="player" style="width:120px;height:500px;float:left;background-color:blue;">
+            <button class="sitbtn" id="team1-player0-sitbtn">Sit</button>
+            <div class="card-container" id="team1-player0-cards"></div>
+        </div>
+        <div style="width:500px;height:500px;float:left;background-color:black;"></div>
+        <div class="player" style="width:120px;height:500px;float:left;background-color:purple;">
+            <button class="sitbtn" id="team1-player1-sitbtn">Sit</button>
+            <div class="card-container" id="team1-player1-cards"></div>
+        </div>
+        <div class="player" style="width:740px;height=120px;background-color:yellow;">
+            <button class="sitbtn" id="team0-player1-sitbtn">Sit</button>
+            <div class="card-container" id="team0-player1-cards"></div>
+        </div>
+        -->
+</body>
