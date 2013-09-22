@@ -8,9 +8,17 @@
         , player = null;
 
     socket.on('sit', function (data) {
-        console.log(data);
         $('#' + data.place + '-sitbtn')
             .replaceWith("<div id=\"" + data.place + "-name\">" + data.user + "</div>");
+    });
+
+    socket.on('leave', function (data) {
+        $('#' + data.team + "-" + data.player + "-name")
+            .replaceWith("<button class=\"sitbtn\" id=\"" + data.team + "-" + data.player + "-sitbtn\">Sit</button>");
+        $('#' + data.team + "-" + data.player + "-sitbtn")
+            .click(function () {
+                socket.emit('sit', {team: data.team, player: data.player});
+            });
     });
 
     var displayCard = function (card) {
@@ -254,8 +262,8 @@
                 <button class="bidbtn" id="8" disabled>8</button>
                 <button class="bidbtn" id="9" disabled>9</button>
                 <button class="bidbtn" id="2-for-10" disabled>2 for 10</button>
-                <button class="bidbtn" id="11" disabled>2 for 10</button>
-                <button class="bidbtn" id="12" disabled>2 for 10</button>
+                <button class="bidbtn" id="11" disabled>11</button>
+                <button class="bidbtn" id="12" disabled>12</button>
                 <button class="bidbtn" id="bid-boston" disabled>boston</button>
             </div>
         </div>

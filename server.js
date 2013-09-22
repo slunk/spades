@@ -121,6 +121,7 @@ io.sockets.on('connection', function (socket) {
             var team = users[socket.id].team
                 , player = users[socket.id].player;
             players[team][player] = null;
+            updateAll('leave', {team: team, player: player});
         }
         delete users[socket.id];
     });

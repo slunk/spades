@@ -17,10 +17,10 @@ var Card = function (id) {
             return "2";
         }
         if (this.id == 53) {
-            return "2";
+            return "L";
         }
         if (this.id == 54) {
-            return "2";
+            return "B";
         }
         if (this.id % 13 < 9) {
             return (this.id % 13) + 2;
