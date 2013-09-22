@@ -69,7 +69,6 @@ io.sockets.on('connection', function (socket) {
         if (addPlayer(socket, data.team, data.player)) {
             console.log("SITTING");
             updateAll("sit", {user: username(socket), place: data.team + "-" + data.player});
-            console.log(players);
             if (players["team0"]["player0"] && players["team0"]["player1"] &&
                 players["team1"]["player0"] && players["team1"]["player1"]) {
                 sendMessage(game.reset());
@@ -113,8 +112,8 @@ io.sockets.on('connection', function (socket) {
     /* Disconnect cleanup */
     socket.on('disconnect', function (data) {
         if (users[socket.id].team) {
-            var team = users[socket.id].team;
-            var player = users[socket.id].player;
+            var team = users[socket.id].team
+                , player = users[socket.id].player;
             players[team][player] = null;
         }
         delete users[socket.id];
