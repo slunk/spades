@@ -41,9 +41,6 @@ var username = function (socket) {
 
 var sendMessage = function (message) {
     if (message.recipient == "all") {
-        if (message.action = spades.SERVER_ACTION.SEND_SCORES) {
-            console.log(message.data);
-        }
         updateAll(message.action, message.data);
     } else if (message.recipient == "team0" || message.recipient == "team1") {
         players[message.recipient].player0.emit(message.action, message.data);
@@ -69,11 +66,11 @@ io.sockets.on('connection', function (socket) {
         if (data != "server") {
             users[socket.id].name = data || users[socket.id].name;
         }
+        updateAll("msg", {name: "server", text: users[socket.id].name + " has joined the room."});
     });
 
     socket.on("sit", function (data) {
         if (addPlayer(socket, data.team, data.player)) {
-            console.log("SITTING");
             updateAll("sit", {user: username(socket), place: data.team + "-" + data.player});
             if (players["team0"]["player0"] && players["team0"]["player1"] &&
                 players["team1"]["player0"] && players["team1"]["player1"]) {
@@ -105,7 +102,6 @@ io.sockets.on('connection', function (socket) {
         var team = users[socket.id].team
             , player = users[socket.id].player
             , messages = game.play(team, player, new card.Card(data.card));
-        console.log(data.card);
         updateAll("play", {team: team, player: player, card: data.card});
         messages.forEach(sendMessage);
     });
