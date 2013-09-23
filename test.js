@@ -146,18 +146,13 @@ describe("Model's", function () {
 
 describe("Server", function(done) {
     var server = require('./server.js')
-        , socket1, socket2, socket3, socket4
-        , url = "http://localhost:1337";
+        , url = "http://localhost:1337"
+        , socket1 = io.connect(url)
+        , socket2 = io.connect(url)
+        , socket3 = io.connect(url)
+        , socket4 = io.connect(url);
 
-    beforeEach(function (done) {
-        socket1 = io.connect(url);
-        socket2 = io.connect(url);
-        socket3 = io.connect(url);
-        socket4 = io.connect(url);
-        done();
-    });
-
-    it("should blah", function (done) {
+    it("should notify a user when they join a team.", function (done) {
         socket1.on("sit", function (data) {
             socket1.removeAllListeners("sit");
             done();
@@ -165,7 +160,7 @@ describe("Server", function(done) {
         socket1.emit("sit", {team: "team0", player: "player0"});
     });
 
-    it("should blah", function (done) {
+    it("should notify other users when one joins a team.", function (done) {
         socket1.on("sit", function (data) {
             socket1.removeAllListeners("sit");
             done();
