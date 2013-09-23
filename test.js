@@ -1,4 +1,5 @@
 var assert = require('assert')
+    , io = require('socket.io-client')
     , spades = require('./spades.js')
     , card = require('./public/card.js');
 
@@ -143,8 +144,32 @@ describe("Model's", function () {
     });
 });
 
-describe("socket.io", function(done) {
-    it("should work", function (done) {
+describe("Server", function(done) {
+    var server = require('./server.js')
+        , socket1, socket2, socket3, socket4
+        , url = "http://localhost:1337";
+
+    beforeEach(function (done) {
+        socket1 = io.connect(url);
+        socket2 = io.connect(url);
+        socket3 = io.connect(url);
+        socket4 = io.connect(url);
         done();
+    });
+
+    it("should blah", function (done) {
+        socket1.on("sit", function (data) {
+            socket1.removeAllListeners("sit");
+            done();
+        });
+        socket1.emit("sit", {team: "team0", player: "player0"});
+    });
+
+    it("should blah", function (done) {
+        socket1.on("sit", function (data) {
+            socket1.removeAllListeners("sit");
+            done();
+        });
+        socket2.emit("sit", {team: "team0", player: "player1"});
     });
 });

@@ -98,7 +98,7 @@ var bidActions = {
     "boston": {val: 13, mult: 1}
 };
 
-this.Game = function () {
+exports.Game = function () {
     this.MAX_SCORE = 800;
     this.team0 = new Team("team0");
     this.team1 = new Team("team1");
@@ -302,7 +302,5 @@ this.Game = function () {
     };
 }
 
-this.Player = Player;
-this.Team = Team;
-this.bidActions = bidActions;
-this.SERVER_ACTION = SERVER_ACTION;
+exports.bidActions = bidActions;
+exports.SERVER_ACTION = SERVER_ACTION;
