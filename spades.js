@@ -76,6 +76,11 @@ var Team = function (id) {
     this.player1.teammate = this.player0;
 };
 
+/* SERVER_ACTION
+ *
+ * Enum for any type of action the game requires the server to relay to the
+ * clients.
+ */
 var SERVER_ACTION = {
     PROMPT_BID: "PROMPT_BID",
     PROMPT_PLAY: "PROMPT_PLAY",
@@ -84,7 +89,11 @@ var SERVER_ACTION = {
     SEND_SCORES: "SEND_SCORES",
 };
 
-var bidActions = {
+/* bidType
+ *
+ * Valid bids and their values for this version of spades.
+ */
+var bidType = {
     "show-cards": "NOBID",
     "board": {val: 4, mult: 1},
     "5": {val: 5, mult: 1},
@@ -98,6 +107,13 @@ var bidActions = {
     "boston": {val: 13, mult: 1}
 };
 
+/* Game
+ *
+ * Stores global state of a game of spades and the state of a round in the game
+ * while it is in progress. All functionality is provided by the reset, bid, and
+ * play methods. These all return server action(s) which the server must pass on
+ * to the clients.
+ */
 exports.Game = function () {
     this.MAX_SCORE = 800;
     this.team0 = new Team("team0");
@@ -106,7 +122,7 @@ exports.Game = function () {
 
     /* reset
      *
-     * TODO: description
+     * Reset the game to default settings before any bids or plays have occured.
      *
      * return a single server action
      */
@@ -125,9 +141,11 @@ exports.Game = function () {
 
     /* bid
      *
-     * params:
+     * params: team (string), bid (bidType)
      *
-     * TODO: description
+     * Either make this.currTeam's bid NOT blind this round if instructed to
+     * show cards or set the bid to whatever is passed in. If only one team has
+     * placed a bid this round, change this.currTeam to the other team.
      *
      * return list of server actions
      */
@@ -137,7 +155,7 @@ exports.Game = function () {
             serverActions.push({action: SERVER_ACTION.SEND_CARDS, recipient: {team: team, player: "player0"}, data: this[team].player0.cards});
             serverActions.push({action: SERVER_ACTION.SEND_CARDS, recipient: {team: team, player: "player1"}, data: this[team].player1.cards});
         }
-        if (bid == bidActions["show-cards"]) {
+        if (bid == bidType["show-cards"]) {
             this.roundInfo[team].bid.blind = false;
             serverActions.push({action: SERVER_ACTION.PROMPT_BID, recipient: this.currTeam, data: null});
             return serverActions;
@@ -155,7 +173,7 @@ exports.Game = function () {
 
     /* play
      *
-     * take a player object and a card id.
+     * params: team (string), player (string), card (Card)
      *
      * Add the (player, card) pair to the current book, if every card is in,
      * determine the winner, and update game state.
@@ -302,5 +320,5 @@ exports.Game = function () {
     };
 }
 
-exports.bidActions = bidActions;
+exports.bidType = bidType;
 exports.SERVER_ACTION = SERVER_ACTION;

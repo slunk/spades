@@ -48,20 +48,20 @@ describe("Model's", function () {
         });
 
         it("should return the correct actions when asked to show cards", function (done) {
-            var actions = game.bid("team0", spades.bidActions["show-cards"]);
+            var actions = game.bid("team0", spades.bidType["show-cards"]);
             assert.equal(actions.length, 3);
             assert.equal(actions[0].action, spades.SERVER_ACTION.SEND_CARDS);
             assert.deepEqual(actions[0].recipient, {team: "team0", player: "player0"});
             assert.equal(actions[2].action, spades.SERVER_ACTION.PROMPT_BID);
             assert.equal(actions[2].recipient, "team0");
             assert.equal(game.roundInfo.team0.bid.blind, false);
-            actions = game.bid("team0", spades.bidActions["board"]);
+            actions = game.bid("team0", spades.bidType["board"]);
             assert.equal(actions.length, 1);
             assert.equal(actions[0].action, spades.SERVER_ACTION.PROMPT_BID);
             assert.equal(actions[0].recipient, "team1");
             assert.equal(game.roundInfo.team0.bid.val, 4);
             assert.equal(game.roundInfo.team0.bid.mult, 1);
-            actions = game.bid("team1", spades.bidActions["2-for-10"]);
+            actions = game.bid("team1", spades.bidType["2-for-10"]);
             assert.equal(actions.length, 3);
             assert.equal(actions[0].action, spades.SERVER_ACTION.SEND_CARDS)
             assert.deepEqual(actions[0].recipient, {team: "team1", player: "player0"});
@@ -128,8 +128,8 @@ describe("Model's", function () {
 
     describe("game", function (done) {
         it("should respond correctly to first four plays", function (done) {
-            game.bid("team0", spades.bidActions["board"]);
-            game.bid("team1", spades.bidActions["8"]);
+            game.bid("team0", spades.bidType["board"]);
+            game.bid("team1", spades.bidType["8"]);
             var actions = game.play("team1", "player0", game.team1.player0.cards[0]);
             assert.equal(actions.length, 1);
             assert.equal(actions[0].action, spades.SERVER_ACTION.PROMPT_PLAY);

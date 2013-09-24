@@ -90,7 +90,7 @@ io.sockets.on('connection', function (socket) {
         tmsocket.on("bidAccept", function (data) {
             if (data.accept) {
                 updateAll('msg', {name: "server", text: users[tmsocket.id].name + " accepts."});
-                var messages = game.bid(team, spades.bidActions[bid]);
+                var messages = game.bid(team, spades.bidType[bid]);
                 messages.forEach(sendMessage);
             } else {
                 updateAll('msg', {name: "server", text: users[tmsocket.id].name + " declines."});
