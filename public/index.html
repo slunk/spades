@@ -34,14 +34,6 @@
             $("#" + id).mouseout(function () {
                 $("#" + id).css("top", "0px");
             });
-            $("#" + id).click(function () {
-                cards.splice(n, 1);
-                $("#" + id).remove();
-                cards.slice(n, cards.length).forEach(function (card) {
-                    $("#" + card.id).remove();
-                    displayCard(card);
-                });
-            });
     };
 
     socket.on("PROMPT_BID", function (data) {
@@ -82,6 +74,13 @@
         $('#chattext').scrollTop($('#chattext')[0].scrollHeight);
     });
 
+
+    socket.on('bidConfirmed', function (data) {
+        $('.bidbtn').each(function () {
+            this.disabled = true;
+        });
+    });
+
     socket.on('PROMPT_PLAY', function (data) {
         $('#chattext').append("<strong>Your turn!</strong><br>");
         $('.card').mouseover(function (event) {
@@ -105,6 +104,7 @@
     });
 
     socket.on("play", function (data) {
+        console.log(data);
         var card = new Card(+data.card)
             , fname = card.imageFileName()
             , style = "height:150px;";
@@ -112,12 +112,18 @@
     });
 
     socket.on('SEND_BOOK_WINNER', function (data) {
-        setTimeout(function () {
+        console.log("IN SEND BOOK WINNER");
+        $('.temp').empty();
+            console.log(data.team);
+            console.log(data.books);
+            $('#books-' + data.team).text(data.books); 
+
+        /*setTimeout(function () {
             $('.temp').empty();
             console.log(data.team);
             console.log(data.books);
             $('#books-' + data.team).text(data.books); 
-        }, 2000);
+        }, 2000);*/
     });
 
     socket.on('SEND_SCORES', function (data) {

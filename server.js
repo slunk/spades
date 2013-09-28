@@ -91,10 +91,13 @@ io.sockets.on('connection', function (socket) {
             if (data.accept) {
                 updateAll('msg', {name: "server", text: users[tmsocket.id].name + " accepts."});
                 var messages = game.bid(team, spades.bidType[bid]);
+                updateAll("bidConfirmed", null);
                 messages.forEach(sendMessage);
             } else {
                 updateAll('msg', {name: "server", text: users[tmsocket.id].name + " declines."});
             }
+            socket.removeAllListeners("bidAccept");
+            tmsocket.removeAllListeners("bidAccept");
         });
     });
 
@@ -103,7 +106,9 @@ io.sockets.on('connection', function (socket) {
             , player = users[socket.id].player
             , messages = game.play(team, player, new card.Card(data.card));
         updateAll("play", {team: team, player: player, card: data.card});
-        messages.forEach(sendMessage);
+        setTimeout(function () {
+            messages.forEach(sendMessage);
+        }, 2000);
     });
 
     socket.on("reset", function (data) {
