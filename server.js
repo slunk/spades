@@ -120,8 +120,8 @@ io.sockets.on('connection', function (socket) {
         if (users[socket.id].team) {
             var team = users[socket.id].team
                 , player = users[socket.id].player;
-            players[team][player] = null;
             updateAll('leave', {team: team, player: player});
+            players[team][player] = null;
         }
         delete users[socket.id];
     });

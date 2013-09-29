@@ -3,7 +3,7 @@
 <script src="/socket.io/socket.io.js"></script>
 <script src="card.js"></script>
 <script>
-    var socket = io.connect(window.location.hostname)
+    var socket = io.connect(window.location.hostname, {'sync disconnect on unload': true })
         , cards = []
         , player = null;
 
@@ -37,7 +37,6 @@
     };
 
     socket.on("PROMPT_BID", function (data) {
-        console.log('bid received');
         $('.bidbtn').each(function () {
             this.disabled = false;
         });
@@ -49,7 +48,6 @@
         }).map(function (card) {
             return new Card(card.id);
         });
-        console.log(cards);
         var n = 0;
         cards.forEach(function (card) {
             displayCard(card);
@@ -59,7 +57,6 @@
     socket.on('bidAccept', function (data) {
         $('#accept').remove();
         $('#decline').remove();
-        console.log('bid accept received');
         $('#chattext').append("<span id=\"accept\">Yes</span> <span id=\"decline\">No</span>");
         $('#accept').click(function () {
             socket.emit("bidAccept", {accept: true});
@@ -82,51 +79,29 @@
     });
 
     socket.on('PROMPT_PLAY', function (data) {
-        console.log(data);
         $('#chattext').append("<strong>Your turn!</strong><br>");
         data.playable.forEach(function (card) {
-        $('#card-' + card.id).mouseover(function (event) {
-            $(this).css("top", "-20px");
-        });
-        $('#card-' + card.id).mouseout(function () {
-            $(this).css("top", "0px");
-        });
-        $('#card-' + card.id).click(function (event) {
-            var id = +event.target.name;
-            console.log(id);
-            socket.emit("play", {card: id});
-            cards.splice(id, 1);
-            $('.card').unbind();
-            $(this).remove();
-            cards.slice(id, cards.length).forEach(function (card) {
-                $("#card-" + card.id).remove();
-                displayCard(card);
+            $('#card-' + card.id).mouseover(function (event) {
+                $(this).css("top", "-20px");
             });
-
-        });
-        });
-        /*$('.card').mouseover(function (event) {
-            $(this).css("top", "-20px");
-        });
-        $('.card').mouseout(function () {
-            $(this).css("top", "0px");
-        });
-        $('.card').click(function (event) {
-            var id = +event.target.name;
-            console.log(id);
-            socket.emit("play", {card: id});
-            cards.splice(id, 1);
-            $('.card').unbind();
-            $(this).remove();
-            cards.slice(id, cards.length).forEach(function (card) {
-                $("#card-" + card.id).remove();
-                displayCard(card);
+            $('#card-' + card.id).mouseout(function () {
+                $(this).css("top", "0px");
             });
-        });*/
+            $('#card-' + card.id).click(function (event) {
+                var id = +event.target.name;
+                socket.emit("play", {card: id});
+                cards.splice(id, 1);
+                $('.card').unbind();
+                $(this).remove();
+                cards.slice(id, cards.length).forEach(function (card) {
+                    $("#card-" + card.id).remove();
+                    displayCard(card);
+                });
+            });
+        });
     });
 
     socket.on("play", function (data) {
-        console.log(data);
         var card = new Card(+data.card)
             , fname = card.imageFileName()
             , style = "height:150px;";
@@ -134,18 +109,8 @@
     });
 
     socket.on('SEND_BOOK_WINNER', function (data) {
-        console.log("IN SEND BOOK WINNER");
         $('.temp').empty();
-            console.log(data.team);
-            console.log(data.books);
-            $('#books-' + data.team).text(data.books); 
-
-        /*setTimeout(function () {
-            $('.temp').empty();
-            console.log(data.team);
-            console.log(data.books);
-            $('#books-' + data.team).text(data.books); 
-        }, 2000);*/
+        $('#books-' + data.team).text(data.books); 
     });
 
     socket.on('SEND_SCORES', function (data) {
