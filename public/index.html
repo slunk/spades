@@ -82,8 +82,30 @@
     });
 
     socket.on('PROMPT_PLAY', function (data) {
+        console.log(data);
         $('#chattext').append("<strong>Your turn!</strong><br>");
-        $('.card').mouseover(function (event) {
+        data.playable.forEach(function (card) {
+        $('#card-' + card.id).mouseover(function (event) {
+            $(this).css("top", "-20px");
+        });
+        $('#card-' + card.id).mouseout(function () {
+            $(this).css("top", "0px");
+        });
+        $('#card-' + card.id).click(function (event) {
+            var id = +event.target.name;
+            console.log(id);
+            socket.emit("play", {card: id});
+            cards.splice(id, 1);
+            $('.card').unbind();
+            $(this).remove();
+            cards.slice(id, cards.length).forEach(function (card) {
+                $("#card-" + card.id).remove();
+                displayCard(card);
+            });
+
+        });
+        });
+        /*$('.card').mouseover(function (event) {
             $(this).css("top", "-20px");
         });
         $('.card').mouseout(function () {
@@ -100,7 +122,7 @@
                 $("#card-" + card.id).remove();
                 displayCard(card);
             });
-        });
+        });*/
     });
 
     socket.on("play", function (data) {

@@ -167,7 +167,8 @@ exports.Game = function () {
             serverActions.push({action: SERVER_ACTION.PROMPT_BID, recipient: this.currTeam, data: null});
             return serverActions;
         }
-        serverActions.push({action: SERVER_ACTION.PROMPT_PLAY, recipient: this.currPlayer});
+        serverActions.push({action: SERVER_ACTION.PROMPT_PLAY, recipient: this.currPlayer
+                , data: {playable: this.playableCards(this.currPlayer.team, this.currPlayer.player)}});
         return serverActions;
     };
 
@@ -183,6 +184,9 @@ exports.Game = function () {
     this.play = function (team, player, card) {
         var serverActions = [];
         var currBook = this.roundInfo.currBook;
+        if (card.suit() == "spade") {
+            this.roundInfo.spadesPlayed = true;
+        }
         currBook.push({team: team, player: player, card: card});
         if (currBook.length >= 4) {
             var winner = this.determineWinner(currBook)
@@ -209,7 +213,8 @@ exports.Game = function () {
         } else {
             this.rotatePlayer();
         }
-        serverActions.push({action: SERVER_ACTION.PROMPT_PLAY, recipient: this.currPlayer});
+        serverActions.push({action: SERVER_ACTION.PROMPT_PLAY, recipient: this.currPlayer
+                , data: {playable: this.playableCards(this.currPlayer.team, this.currPlayer.player)}});
         return serverActions;
     };
 
@@ -274,6 +279,7 @@ exports.Game = function () {
     this.resetRoundInfo = function () {
         this.roundInfo = {
             "turn": 1,
+            "spadesPlayed": false,
             "currBook": [],
             "team0": {
                 "books": [],
@@ -284,6 +290,27 @@ exports.Game = function () {
                 "bid": {blind: true}
             }
         };
+    };
+
+    this.playableCards = function (team, player) {
+        var playable = null
+            , first = null;
+        if (this.roundInfo.currBook.length == 0) {
+            if (this.roundInfo.spadesPlayed) {
+                return this[team][player].cards;
+            }
+            playable = this[team][player].cards.filter(function (card) { return card.suit() != "spade"; });
+            if (playable.length == 0) {
+                return this[team][player].cards;
+            }
+            return playable;
+        }
+        first = this.roundInfo.currBook[0].card;
+        playable = this[team][player].cards.filter(function (card) { return card.suit() == first.suit(); });
+        if (playable.length == 0) {
+            return this[team][player].cards;
+        }
+        return playable;
     };
 
     this.deal = function () {
