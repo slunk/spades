@@ -4,12 +4,42 @@
 <script src="card.js"></script>
 <script>
     var socket = io.connect(window.location.hostname, {'sync disconnect on unload': true })
+        , rooms = []
         , cards = []
         , player = null;
 
     socket.on('sit', function (data) {
         $('#' + data.place + '-sitbtn')
             .replaceWith("<div id=\"" + data.place + "-name\">" + data.user + "</div>");
+    });
+
+    socket.on('rooms', function (data) {
+        var makeCb = function (r, t, p) {
+            return function () {
+                socket.emit("joinRoom", {name: r, team: t, player: p});
+                $('#preliminary').hide();
+                $('#appcontainer').show();
+            };
+        };
+        var roomList = $('#room-list');
+        roomList.empty();
+        rooms = data;
+        rooms.forEach(function (room) {
+            roomList.append("<li>" + room.name);
+            for (var key in room.players) {
+                if (room.players[key]) {
+                    roomList.append(" " + room.players[key] + " ");
+                } else {
+                    var menuItem = $("<button id=\"" + key + "\">Join</button>");
+                    roomList.append(menuItem);
+                    var r = key.split('-')[0]
+                        , t = key.split('-')[1]
+                        , p = key.split('-')[2];
+                    menuItem.click(makeCb(r, t, p));
+                }
+            }
+            roomList.append("</li>");
+        });
     });
 
     socket.on('leave', function (data) {
@@ -129,8 +159,11 @@
         $('#nicksubmit').click(function () {
             var name = $('#nickinput').val();
             socket.emit("setName", name);
-            $('#preliminary').hide();
-            $('#appcontainer').show();
+            $('#nickname').hide();
+        });
+
+        $('#addroom').click(function () {
+            socket.emit('addRoom', null);
         });
 
         $('#chatinput').bind("keypress", {}, function (e) {
@@ -216,8 +249,12 @@
 </head>
 <body>
     <div id="preliminary">
-        <input id="nickinput" type="text" placeholder="Nickname"></input>
-        <button id="nicksubmit">Submit</button>
+        <div id="nickname">
+            <input id="nickinput" type="text" placeholder="Nickname"></input>
+            <button id="nicksubmit">Submit</button>
+        </div>
+        <ul id="room-list"></ul>
+        <button id="addroom">Create</button>
         <table>
         </table>
     </div>
