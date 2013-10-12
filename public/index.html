@@ -52,18 +52,18 @@
     });
 
     var displayCard = function (card) {
-            var fname = card.imageFileName();
-            var id = card.id;
-            var n = cards.indexOf(card);
-            var style = "position:relative;z-index: " + n + ";";
-            style += "display:inline-block;height:150px;";
-            $("#cardcontainer").append("<img class=\"card\" name=\"" + id + "\" id=\"card-" + id + "\" src=\"images/" + fname + "\" style=\"" + style + "\"></img>");
-            $("#" + id).mouseover(function () {
-                $("#" + id).css("top", "-20px");
-            });
-            $("#" + id).mouseout(function () {
-                $("#" + id).css("top", "0px");
-            });
+	    var fname = card.imageFileName();
+	    var id = card.id;
+	    var n = cards.indexOf(card);
+	    var style = "position:relative;z-index: " + n + ";";
+	    style += "display:inline-block;height:150px;";
+	    $("#cardcontainer").append("<img class=\"card\" name=\"" + id + "\" id=\"card-" + id + "\" src=\"images/" + fname + "\" style=\"" + style + "\"></img>");
+	    $("#" + id).mouseover(function () {
+	        $("#" + id).css("top", "-20px");
+	    });
+	    $("#" + id).mouseout(function () {
+	        $("#" + id).css("top", "0px");
+	    });
     };
 
     socket.on("PROMPT_BID", function (data) {
@@ -187,8 +187,11 @@
             socket.emit("bid", bid);
         });
 
-        $('#reset').click(function () {
-            socket.emit("reset");
+        $('#leave').click(function () {
+			$("#cardcontainer").empty();
+			$('#appcontainer').hide();
+			$('#preliminary').show();
+            socket.emit("leave");
         });
     });
 </script>
@@ -253,6 +256,7 @@
             <input id="nickinput" type="text" placeholder="Nickname"></input>
             <button id="nicksubmit">Submit</button>
         </div>
+		<h3>Rooms:</h3>
         <ul id="room-list"></ul>
         <button id="addroom">Create</button>
         <table>
@@ -324,7 +328,7 @@
             <div id="chattext" style="height:80%;width:100%;border:1px solid #ccc;font:16px/26px Georgia, Garamond, Serif;overflow:scroll;"> </div>
             <textarea id="chatinput" type="text" placeholder="Chat:"></textarea>
         </div>
-        <button id="reset">Reset</button>
+        <button id="leave">Leave</button>
     </div>
     </div>
 <!--

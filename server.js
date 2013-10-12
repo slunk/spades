@@ -37,19 +37,31 @@ var Room = function (name) {
             this.players[message.recipient].player0.emit(message.action, message.data);
             this.players[message.recipient].player1.emit(message.action, message.data);
         } else {
-            console.log(message.recipient);
-            console.log(this.players);
             this.players[message.recipient.team][message.recipient.player].emit(message.action, message.data);
         }
     };
 
+	this.numPlayers = function () {
+		var total = 0;
+		for (var team in this.players) {
+			for (var player in this.players[team]) {
+				if (this.players[team][player] != null) {
+					total += 1;	
+				}
+			}
+		}
+		return total;
+	}
+	
     this.isFull = function () {
         return this.players.team0.player0 && this.players.team0.player1
             && this.players.team1.player0 && this.players.team1.player1;
     };
 };
 
-var users = {}, rooms = {room0: new Room("room0")}, nextRoom = 1;
+var users = {}
+	, rooms = {}
+	, nextRoom = 0;
 
 var registerPlayerEvents = function (socket, room, team, player) {
     var teammate;
@@ -59,10 +71,6 @@ var registerPlayerEvents = function (socket, room, team, player) {
     } else {
         teammate = "player0";
     }
-        console.log(team);
-        console.log(player);
-        console.log(teammate);
-
 
     for (var tkey in room.players) {
         for (var pkey in room.players[team]) {
@@ -111,7 +119,12 @@ var registerPlayerEvents = function (socket, room, team, player) {
         socket.broadcast.to(room.name).emit('leave', {team: team, player: player});
         socket.leave(room.name);
         socket.join('lobby');
-        socket.emit('rooms', rooms);
+		if (room.numPlayers() == 0) {
+			delete rooms[room.name];
+			sendRooms(io.sockets.in('lobby'));
+		} else {
+			sendRooms(socket);
+		}
     });
 
     socket.on('disconnect', function (data) {
@@ -172,6 +185,6 @@ io.sockets.on('connection', function (socket) {
     });
 
     socket.on('disconnect', function (data) {
-        //TODO: necessary?
+        delete users[socket.id];
     });
 });
