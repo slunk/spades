@@ -143,6 +143,67 @@ describe("Model's", function () {
         });
     });
 
+    describe("playableCards", function (done) {
+        beforeEach(function (done) {
+            game.team0.player0.cards = [new card.Card(0)
+                , new card.Card(1)
+                , new card.Card(2)
+                , new card.Card(44)
+                , new card.Card(45)
+            ]
+            done();
+        });
+
+        it("should return a player's entire hand without spades if they are the first to play and spades have not been played", function (done) {
+            var playable = game.playableCards("team0", "player0");
+            assert.equal(playable.length, 3);
+            for (var i = 0; i < playable.length; i++) {
+                assert.notEqual(playable[i].suit(), "spade");
+            }
+            done();
+        });
+
+        it("should return a player's entire hand if they are the first to play and spades have been played", function (done) {
+            var playable = null;
+            game.roundInfo.spadesPlayed = true;
+            playable = game.playableCards("team0", "player0");
+            assert.equal(playable.length, 5);
+            done();
+        });
+
+        it("should return a player's entire hand if they are the first to play and only have spades", function (done) {
+            var playable = null;
+            game.team0.player0.cards = game.team0.player0.cards.filter(function (card) {
+                return card.suit() == "spade";
+            });
+            playable = game.playableCards("team0", "player0");
+            assert.equal(playable.length, 2);
+            for (var i = 0; i < playable.length; i++) {
+                assert.equal(playable[i].suit(), "spade");
+            }
+            done();
+        });
+
+        it("should return cards of the first suit played if available", function (done) {
+            var playable = null;
+            game.roundInfo.currBook = [{card: new card.Card(4)}];
+            playable = game.playableCards("team0", "player0");
+            assert.equal(playable.length, 3);
+            for (var i = 0; i < playable.length; i++) {
+                assert.equal(playable[i].suit(), "heart");
+            }
+            done();
+        });
+
+        it("should return a player's entire hand if they are out of the first suit played available", function (done) {
+            var playable = null;
+            game.roundInfo.currBook = [{card: new card.Card(20)}];
+            playable = game.playableCards("team0", "player0");
+            assert.equal(playable.length, 5);
+            done();
+        });
+    });
+
     describe("game", function (done) {
         it("should respond correctly to first four plays", function (done) {
             game.bid("team0", spades.bidType["board"]);
@@ -161,7 +222,7 @@ describe("Model's", function () {
     });
 });
 
-describe("Server", function(done) {
+/*describe("Server", function(done) {
     var server = require('./server.js')
         , url = "http://localhost:1337"
         , socket1 = io.connect(url)
@@ -184,4 +245,4 @@ describe("Server", function(done) {
         });
         socket2.emit("sit", {team: "team0", player: "player1"});
     });
-});
+});*/
