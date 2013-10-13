@@ -11,7 +11,7 @@ var Deck = function (rooseveltRules) {
 
         for (i = 0; i < 52; i++) {
             /* Remove the 2s of hearts, diamonds, and spades. */
-            if (!rooseveltRules || !(i == 0 || i == 26 || i == 39)) {
+            if (!rooseveltRules || !(i === 0 || i === 26 || i === 39)) {
                 this.cards.push(new card.Card(i));
             }
         }
@@ -26,7 +26,7 @@ var Deck = function (rooseveltRules) {
     this.shuffle();
 
     this.empty = function () {
-        if (this.cards.length == 0) {
+        if (this.cards.length === 0) {
             return true;
         }
         return false;
@@ -134,9 +134,9 @@ exports.Game = function () {
         this.currTeam = "team0";
         this.deal();
         this.resetRoundInfo();
-        return {action: SERVER_ACTION.PROMPT_BID
-            , recipient: "team0"
-            , data: null};
+        return {action: SERVER_ACTION.PROMPT_BID,
+            recipient: "team0",
+            data: null};
     };
 
     /* bid
@@ -167,8 +167,8 @@ exports.Game = function () {
             serverActions.push({action: SERVER_ACTION.PROMPT_BID, recipient: this.currTeam, data: null});
             return serverActions;
         }
-        serverActions.push({action: SERVER_ACTION.PROMPT_PLAY, recipient: this.currPlayer
-                , data: {playable: this.playableCards(this.currPlayer.team, this.currPlayer.player)}});
+        serverActions.push({action: SERVER_ACTION.PROMPT_PLAY, recipient: this.currPlayer,
+                data: {playable: this.playableCards(this.currPlayer.team, this.currPlayer.player)}});
         return serverActions;
     };
 
@@ -189,8 +189,8 @@ exports.Game = function () {
         }
         currBook.push({team: team, player: player, card: card});
         if (currBook.length >= 4) {
-            var winner = this.determineWinner(currBook)
-                , numBooks = null;
+            var winner = this.determineWinner(currBook),
+                numBooks = null;
             this.roundInfo[winner.team].books.push(currBook);
             numBooks = this.roundInfo[winner.team].books.length;
             this.currPlayer = {team: winner.team, player: winner.player};
@@ -213,8 +213,8 @@ exports.Game = function () {
         } else {
             this.rotatePlayer();
         }
-        serverActions.push({action: SERVER_ACTION.PROMPT_PLAY, recipient: this.currPlayer
-                , data: {playable: this.playableCards(this.currPlayer.team, this.currPlayer.player)}});
+        serverActions.push({action: SERVER_ACTION.PROMPT_PLAY, recipient: this.currPlayer,
+               data: {playable: this.playableCards(this.currPlayer.team, this.currPlayer.player)}});
         return serverActions;
     };
 
@@ -293,21 +293,21 @@ exports.Game = function () {
     };
 
     this.playableCards = function (team, player) {
-        var playable = null
-            , first = null;
-        if (this.roundInfo.currBook.length == 0) {
+        var playable = null,
+            first = null;
+        if (this.roundInfo.currBook.length === 0) {
             if (this.roundInfo.spadesPlayed) {
                 return this[team][player].cards;
             }
             playable = this[team][player].cards.filter(function (card) { return card.suit() != "spade"; });
-            if (playable.length == 0) {
+            if (playable.length === 0) {
                 return this[team][player].cards;
             }
             return playable;
         }
         first = this.roundInfo.currBook[0].card;
         playable = this[team][player].cards.filter(function (card) { return card.suit() == first.suit(); });
-        if (playable.length == 0) {
+        if (playable.length === 0) {
             return this[team][player].cards;
         }
         return playable;
@@ -332,7 +332,7 @@ exports.Game = function () {
             var bid = this.roundInfo[team].bid;
             return 'val' in bid && 'mult' in bid && 'blind' in bid;
         };
-        return bidIn.call(this, "team0") && bidIn.call(this, "team1");;
+        return bidIn.call(this, "team0") && bidIn.call(this, "team1");
     };
 
     this.roundOver = function () {
@@ -345,7 +345,7 @@ exports.Game = function () {
         }
         return false;
     };
-}
+};
 
 exports.bidType = bidType;
 exports.SERVER_ACTION = SERVER_ACTION;

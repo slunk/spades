@@ -1,9 +1,9 @@
-var connect = require('connect')
-    , http = require('http')
-    , socketio = require('socket.io')
-    , fs = require('fs')
-    , spades = require('./spades.js')
-    , card = require('./public/card.js');
+var connect = require('connect'),
+    http = require('http'),
+    socketio = require('socket.io'),
+    fs = require('fs'),
+    spades = require('./spades.js'),
+    card = require('./public/card.js');
 
 app = http.createServer(connect().use(connect.static('public')));
 io = socketio.listen(app);
@@ -17,8 +17,8 @@ app.listen(process.env.PORT || 1337);
 
 var Room = function (name) {
     this.name = name;
-    this.players = {team0: {player0: null, player1: null}
-                    , team1: {player0: null, player1: null}};
+    this.players = {team0: {player0: null, player1: null},
+                    team1: {player0: null, player1: null}};
     this.game = new spades.Game();
     this.gameInProgress = false;
 
@@ -45,23 +45,22 @@ var Room = function (name) {
 		var total = 0;
 		for (var team in this.players) {
 			for (var player in this.players[team]) {
-				if (this.players[team][player] != null) {
+				if (this.players[team][player]) {
 					total += 1;	
 				}
 			}
 		}
 		return total;
-	}
+	};
 	
     this.isFull = function () {
-        return this.players.team0.player0 && this.players.team0.player1
-            && this.players.team1.player0 && this.players.team1.player1;
+        return this.numPlayers() == 4;
     };
 };
 
-var users = {}
-	, rooms = {}
-	, nextRoom = 0;
+var users = {},
+	rooms = {},
+	nextRoom = 0;
 
 var registerPlayerEvents = function (socket, room, team, player) {
     var teammate;
@@ -75,14 +74,14 @@ var registerPlayerEvents = function (socket, room, team, player) {
     for (var tkey in room.players) {
         for (var pkey in room.players[team]) {
             if (room.players[tkey][pkey]) {
-                socket.emit("sit", {user: users[room.players[tkey][pkey].id]
-                    , place: tkey + "-" + pkey});
+                socket.emit("sit", {user: users[room.players[tkey][pkey].id],
+                    place: tkey + "-" + pkey});
             }
         }
     }
     socket.on("bid", function (data) {
-        var bid = data
-            , tmsocket = room.players[team][teammate];
+        var bid = data,
+            tmsocket = room.players[team][teammate];
         io.sockets.in(room.name).emit('msg', {name: "server", text: users[socket.id] + " wants to bid " + data});
         tmsocket.removeAllListeners("bidAccept");
         tmsocket.emit("bidAccept", bid);
@@ -119,7 +118,7 @@ var registerPlayerEvents = function (socket, room, team, player) {
         socket.broadcast.to(room.name).emit('leave', {team: team, player: player});
         socket.leave(room.name);
         socket.join('lobby');
-		if (room.numPlayers() == 0) {
+		if (room.numPlayers() === 0) {
 			delete rooms[room.name];
 			sendRooms(io.sockets.in('lobby'));
 		} else {
@@ -135,8 +134,8 @@ var registerPlayerEvents = function (socket, room, team, player) {
 
 var sendRooms = function (recipients) {
     recipients.emit('rooms', Object.keys(rooms).map(function (name) {
-        var room = rooms[name]
-            , players = {};
+        var room = rooms[name],
+            players = {};
         players[name + "-team0-player0"] = room.players.team0.player0 ? users[room.players.team0.player0.id] : null;
         players[name + "-team1-player0"] = room.players.team1.player0 ? users[room.players.team1.player0.id] : null;
         players[name + "-team0-player1"] = room.players.team0.player1 ? users[room.players.team0.player1.id] : null;
@@ -166,12 +165,11 @@ io.sockets.on('connection', function (socket) {
         room.players[team][player] = socket;
         io.sockets.in(room.name).emit('sit', {place: team + '-' + player, user: users[socket.id]});
         registerPlayerEvents(socket, room, team, player);
-        //io.sockets.in(room.name).emit('joined', {team: team, player: player, name: users[socket.id]});
-    }
+    };
 
     socket.on("addRoom", function (data) {
-        var name = "room" + nextRoom++
-            , room = new Room(name);
+        var name = "room" + nextRoom++,
+            room = new Room(name);
         rooms[name] = room;
         joinRoom(room, "team0", "player0");
         sendRooms(io.sockets.in('lobby'));
@@ -181,12 +179,7 @@ io.sockets.on('connection', function (socket) {
         var room = rooms[data.name];
         if (!room.players[data.team][data.player]) {
             joinRoom(room, data.team, data.player);
-            /*socket.join(room.name);
-            socket.leave('lobby');
-            room.players[data.team][data.player] = socket;
-            io.sockets.in(room.name).emit('sit', {place: data.team + '-' + data.player, user: users[socket.id]});
-            registerPlayerEvents(socket, room, data.team, data.player);
-            io.sockets.in(data.name).emit('joined', {team: data.team, player: data.player, name: users[socket.id]});*/
+
             if (room.isFull() && !room.gameInProgress) {
                 room.gameInProgress = true;
                 room.sendMessage(room.game.reset());
