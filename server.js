@@ -160,22 +160,33 @@ io.sockets.on('connection', function (socket) {
         }
     });
 
+    var joinRoom = function (room, team, player) {
+        socket.join(room.name);
+        socket.leave('lobby');
+        room.players[team][player] = socket;
+        io.sockets.in(room.name).emit('sit', {place: team + '-' + player, user: users[socket.id]});
+        registerPlayerEvents(socket, room, team, player);
+        //io.sockets.in(room.name).emit('joined', {team: team, player: player, name: users[socket.id]});
+    }
+
     socket.on("addRoom", function (data) {
         var name = "room" + nextRoom++
             , room = new Room(name);
         rooms[name] = room;
+        joinRoom(room, "team0", "player0");
         sendRooms(io.sockets.in('lobby'));
     });
 
     socket.on("joinRoom", function (data) {
         var room = rooms[data.name];
         if (!room.players[data.team][data.player]) {
-            socket.join(room.name);
+            joinRoom(room, data.team, data.player);
+            /*socket.join(room.name);
             socket.leave('lobby');
             room.players[data.team][data.player] = socket;
             io.sockets.in(room.name).emit('sit', {place: data.team + '-' + data.player, user: users[socket.id]});
             registerPlayerEvents(socket, room, data.team, data.player);
-            io.sockets.in(data.name).emit('joined', {team: data.team, player: data.player, name: users[socket.id]});
+            io.sockets.in(data.name).emit('joined', {team: data.team, player: data.player, name: users[socket.id]});*/
             if (room.isFull() && !room.gameInProgress) {
                 room.gameInProgress = true;
                 room.sendMessage(room.game.reset());
