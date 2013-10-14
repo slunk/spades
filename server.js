@@ -79,6 +79,7 @@ var registerPlayerEvents = function (socket, room, team, player) {
             }
         }
     }
+
     socket.on("bid", function (data) {
         var bid = data,
             tmsocket = room.players[team][teammate];
@@ -102,9 +103,9 @@ var registerPlayerEvents = function (socket, room, team, player) {
     socket.on("play", function (data) {
         var messages = room.game.play(team, player, new card.Card(data.card));
         io.sockets.in(room.name).emit("play", {team: team, player: player, card: data.card});
-        setTimeout(function () {
+        //setTimeout(function () {
             messages.forEach(room.sendMessage.bind(room));
-        }, 2000);
+        //}, 2000);
     });
 
     socket.on('msg', function (data) {

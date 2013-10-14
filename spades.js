@@ -52,7 +52,12 @@ var Player = function (team, player) {
     this.player = player;
 
     this.play = function (card) {
-        var idx = this.cards.indexOf(card);
+        var idx;
+        for (idx = 0; idx < this.cards.length; idx++) {
+            if (this.cards[idx].equals(card)) {
+                break;
+            }
+        }
         this.cards.splice(idx, 1);
     };
 
@@ -187,6 +192,7 @@ exports.Game = function () {
         if (card.suit() == "spade") {
             this.roundInfo.spadesPlayed = true;
         }
+        this[team][player].play(card);
         currBook.push({team: team, player: player, card: card});
         if (currBook.length >= 4) {
             var winner = this.determineWinner(currBook),
@@ -299,14 +305,18 @@ exports.Game = function () {
             if (this.roundInfo.spadesPlayed) {
                 return this[team][player].cards;
             }
-            playable = this[team][player].cards.filter(function (card) { return card.suit() != "spade"; });
+            playable = this[team][player].cards.filter(function (card) {
+                return card.suit() != "spade";
+            });
             if (playable.length === 0) {
                 return this[team][player].cards;
             }
             return playable;
         }
         first = this.roundInfo.currBook[0].card;
-        playable = this[team][player].cards.filter(function (card) { return card.suit() == first.suit(); });
+        playable = this[team][player].cards.filter(function (card) {
+            return card.suit() == first.suit();
+        });
         if (playable.length === 0) {
             return this[team][player].cards;
         }

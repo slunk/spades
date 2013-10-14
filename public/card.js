@@ -45,6 +45,9 @@ var Card = function (id) {
         return "Playing_card_" + this.suit() + "_" + this.value() + ".svg";
     };
 
+    this.equals = function (other) {
+        return this.id === other.id;
+    };
 };
 
 this.Card = Card;
