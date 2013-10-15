@@ -30,14 +30,22 @@ var Room = function (name) {
         return false;
     };
 
+    this.emit = function (msg, data) {
+        io.sockets.in(this.name).emit(msg, data);
+    };
+
     this.sendMessage = function (message) {
+        var player = null, team = null;
         if (message.recipient == "all") {
-            io.sockets.in(this.name).emit(message.action, message.data);
+            this.emit(message.action, message.data);
         } else if (message.recipient == "team0" || message.recipient == "team1") {
-            this.players[message.recipient].player0.emit(message.action, message.data);
-            this.players[message.recipient].player1.emit(message.action, message.data);
+            team = message.recipient;
+            this.players[team].player0.emit(message.action, message.data);
+            this.players[team].player1.emit(message.action, message.data);
         } else {
-            this.players[message.recipient.team][message.recipient.player].emit(message.action, message.data);
+            player = message.recipient.player;
+            team = message.recipient.team;
+            this.players[team][player].emit(message.action, message.data);
         }
     };
 
@@ -83,17 +91,20 @@ var registerPlayerEvents = function (socket, room, team, player) {
     socket.on("bid", function (data) {
         var bid = data,
             tmsocket = room.players[team][teammate];
-        io.sockets.in(room.name).emit('msg', {name: "server", text: users[socket.id] + " wants to bid " + data});
+        room.emit('msg', {name: "server",
+            text: users[socket.id] + " wants to bid " + data});
         tmsocket.removeAllListeners("bidAccept");
         tmsocket.emit("bidAccept", bid);
         tmsocket.on("bidAccept", function (data) {
             if (data.accept) {
                 var messages = room.game.bid(team, spades.bidType[bid]);
-                io.sockets.in(room.name).emit('msg', {name: "server", text: users[tmsocket.id].name + " accepts."});
-                io.sockets.in(room.name).emit('bidConfirmed', null);
+                room.emit('msg', {name: "server",
+                    text: users[tmsocket.id].name + " accepts."});
+                room.emit('bidConfirmed', null);
                 messages.forEach(room.sendMessage.bind(room));
             } else {
-                io.sockets.in(room.name).emit('msg', {name: "server", text: users[tmsocket.id].name + " declines."});
+                room.emit('msg', {name: "server",
+                    text: users[tmsocket.id].name + " declines."});
             }
             socket.removeAllListeners("bidAccept");
             tmsocket.removeAllListeners("bidAccept");
@@ -102,21 +113,22 @@ var registerPlayerEvents = function (socket, room, team, player) {
 
     socket.on("play", function (data) {
         var messages = room.game.play(team, player, new card.Card(data.card));
-        io.sockets.in(room.name).emit("play", {team: team, player: player, card: data.card});
-        //setTimeout(function () {
+        room.emit("play", {team: team, player: player, card: data.card});
+        setTimeout(function () {
             messages.forEach(room.sendMessage.bind(room));
-        //}, 2000);
+        }, 2000);
     });
 
     socket.on('msg', function (data) {
         socket.get('name', function (err, name) {
-            socket.broadcast.to(room.name).emit('msg', {name: name, text: data.text});
+            socket.broadcast.to(room.name).emit('msg',
+                {name: name, text: data.text});
         });
     });
 
     socket.on('leave', function (data) {
         room.players[team][player] = null;
-        socket.broadcast.to(room.name).emit('leave', {team: team, player: player});
+        room.emit('leave', {team: team, player: player});
         socket.leave(room.name);
         socket.join('lobby');
 		if (room.numPlayers() === 0) {
@@ -129,18 +141,27 @@ var registerPlayerEvents = function (socket, room, team, player) {
 
     socket.on('disconnect', function (data) {
         room.players[team][player] = null;
-        socket.broadcast.to(room.name).emit('leave', {team: team, player: player});
+        socket.leave(room.name);
+        room.emit('leave', {team: team, player: player});
     });
 };
 
 var sendRooms = function (recipients) {
     recipients.emit('rooms', Object.keys(rooms).map(function (name) {
         var room = rooms[name],
-            players = {};
-        players[name + "-team0-player0"] = room.players.team0.player0 ? users[room.players.team0.player0.id] : null;
-        players[name + "-team1-player0"] = room.players.team1.player0 ? users[room.players.team1.player0.id] : null;
-        players[name + "-team0-player1"] = room.players.team0.player1 ? users[room.players.team0.player1.id] : null;
-        players[name + "-team1-player1"] = room.players.team1.player1 ? users[room.players.team1.player1.id] : null;
+            players = {},
+            team0 = room.players.team0,
+            team1 = room.players.team1;
+        var playerName = function (player) {
+            if (player) {
+                return users[player.id];
+            }
+            return null;
+        };
+        players[name + "-team0-player0"] = playerName(team0.player0);
+        players[name + "-team1-player0"] = playerName(team1.player0);
+        players[name + "-team0-player1"] = playerName(team0.player1);
+        players[name + "-team1-player1"] = playerName(team1.player1);
         return {name: room.name, players: players};
     }));
 };
@@ -164,7 +185,7 @@ io.sockets.on('connection', function (socket) {
         socket.join(room.name);
         socket.leave('lobby');
         room.players[team][player] = socket;
-        io.sockets.in(room.name).emit('sit', {place: team + '-' + player, user: users[socket.id]});
+        room.emit('sit', {place: team + '-' + player, user: users[socket.id]});
         registerPlayerEvents(socket, room, team, player);
     };
 

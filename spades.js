@@ -157,23 +157,30 @@ exports.Game = function () {
     this.bid = function (team, bid) {
         var serverActions = [];
         if (this.roundInfo[team].bid.blind) {
-            serverActions.push({action: SERVER_ACTION.SEND_CARDS, recipient: {team: team, player: "player0"}, data: this[team].player0.cards});
-            serverActions.push({action: SERVER_ACTION.SEND_CARDS, recipient: {team: team, player: "player1"}, data: this[team].player1.cards});
+            serverActions.push({action: SERVER_ACTION.SEND_CARDS,
+                recipient: {team: team, player: "player0"},
+                data: this[team].player0.cards});
+            serverActions.push({action: SERVER_ACTION.SEND_CARDS,
+                recipient: {team: team, player: "player1"},
+                data: this[team].player1.cards});
         }
         if (bid == bidType["show-cards"]) {
             this.roundInfo[team].bid.blind = false;
-            serverActions.push({action: SERVER_ACTION.PROMPT_BID, recipient: this.currTeam, data: null});
+            serverActions.push({action: SERVER_ACTION.PROMPT_BID,
+                recipient: this.currTeam, data: null});
             return serverActions;
         }
         this.roundInfo[team].bid.val = bid.val;
         this.roundInfo[team].bid.mult = bid.mult;
         if (!this.bidsIn()) {
             this.rotateTeam();
-            serverActions.push({action: SERVER_ACTION.PROMPT_BID, recipient: this.currTeam, data: null});
+            serverActions.push({action: SERVER_ACTION.PROMPT_BID,
+                recipient: this.currTeam, data: null});
             return serverActions;
         }
-        serverActions.push({action: SERVER_ACTION.PROMPT_PLAY, recipient: this.currPlayer,
-                data: {playable: this.playableCards(this.currPlayer.team, this.currPlayer.player)}});
+        serverActions.push({action: SERVER_ACTION.PROMPT_PLAY,
+            recipient: this.currPlayer,
+            data: {playable: this.playableCards(this.currPlayer.team, this.currPlayer.player)}});
         return serverActions;
     };
 
@@ -202,25 +209,31 @@ exports.Game = function () {
             this.currPlayer = {team: winner.team, player: winner.player};
             this.roundInfo.currBook = [];
             this.roundInfo.turn++;
-            serverActions.push({action: SERVER_ACTION.SEND_BOOK_WINNER, recipient: "all", data: {team: winner.team, player: winner.player, books: numBooks}});
+            serverActions.push({action: SERVER_ACTION.SEND_BOOK_WINNER,
+                recipient: "all",
+                data: {team: winner.team, player: winner.player, books: numBooks}});
             if (this.roundOver()) {
                 this.updateScores();
-                serverActions.push({action: SERVER_ACTION.SEND_SCORES, recipient: "all", data: {team0: this.team0.score, team1: this.team1.score}});
+                serverActions.push({action: SERVER_ACTION.SEND_SCORES,
+                    recipient: "all",
+                    data: {team0: this.team0.score, team1: this.team1.score}});
                 this.currPlayer = this.lastStartingPlayer;
                 this.rotatePlayer();
                 this.lastStartingPlayer = this.currPlayer;
                 if (!this.gameOver()) {
                     this.deal();
                     this.resetRoundInfo();
-                    serverActions.push({action: SERVER_ACTION.PROMPT_BID, recipient: this.currTeam});
+                    serverActions.push({action: SERVER_ACTION.PROMPT_BID,
+                        recipient: this.currTeam});
                 }
                 return serverActions;
             }
         } else {
             this.rotatePlayer();
         }
-        serverActions.push({action: SERVER_ACTION.PROMPT_PLAY, recipient: this.currPlayer,
-               data: {playable: this.playableCards(this.currPlayer.team, this.currPlayer.player)}});
+        serverActions.push({action: SERVER_ACTION.PROMPT_PLAY,
+            recipient: this.currPlayer,
+            data: {playable: this.playableCards(this.currPlayer.team, this.currPlayer.player)}});
         return serverActions;
     };
 
