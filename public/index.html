@@ -79,6 +79,7 @@
             return new Card(card.id);
         });
         var n = 0;
+        $("#cardcontainer").empty();
         cards.forEach(function (card) {
             displayCard(card);
         });
@@ -118,9 +119,14 @@
                 $(this).css("top", "0px");
             });
             $('#card-' + card.id).click(function (event) {
-                var id = +event.target.name;
+                var id = +event.target.name, idx;
                 socket.emit("play", {card: id});
-                cards.splice(id, 1);
+                for (idx = 0; idx < cards.length; idx++) {
+                    if (id == cards[idx].id) {
+                        break;
+                    }
+                }
+                cards.splice(idx, 1);
                 $('.card').unbind();
                 $(this).remove();
                 cards.slice(id, cards.length).forEach(function (card) {

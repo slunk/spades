@@ -71,13 +71,7 @@ var users = {},
 	nextRoom = 0;
 
 var registerPlayerEvents = function (socket, room, team, player) {
-    var teammate;
-
-    if (player == "player0") {
-        teammate = "player1";
-    } else {
-        teammate = "player0";
-    }
+    var teammate = (player == "player0") ? "player1" : "player0";
 
     for (var tkey in room.players) {
         for (var pkey in room.players[team]) {
