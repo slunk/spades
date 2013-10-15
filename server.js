@@ -54,7 +54,7 @@ var Room = function (name) {
 		for (var team in this.players) {
 			for (var player in this.players[team]) {
 				if (this.players[team][player]) {
-					total += 1;	
+					total++;
 				}
 			}
 		}
@@ -126,24 +126,29 @@ var registerPlayerEvents = function (socket, room, team, player) {
         });
     });
 
-    socket.on('leave', function (data) {
+    var cleanupOnLeave = function () {
         room.players[team][player] = null;
-        room.emit('leave', {team: team, player: player});
         socket.leave(room.name);
+        room.emit('leave', {team: team, player: player});
+        socket.removeAllListeners('bid');
+        socket.removeAllListeners('play');
+        socket.removeAllListeners('msg');
+        socket.removeAllListeners('leave');
+        socket.removeListener('disconnect', cleanupOnLeave);
+        if (room.numPlayers() === 0) {
+            delete rooms[room.name];
+            sendRooms(io.sockets.in('lobby'));
+        } else {
+            sendRooms(socket);
+        }
+    };
+
+    socket.on('leave', function (data) {
+        cleanupOnLeave();
         socket.join('lobby');
-		if (room.numPlayers() === 0) {
-			delete rooms[room.name];
-			sendRooms(io.sockets.in('lobby'));
-		} else {
-			sendRooms(socket);
-		}
     });
 
-    socket.on('disconnect', function (data) {
-        room.players[team][player] = null;
-        socket.leave(room.name);
-        room.emit('leave', {team: team, player: player});
-    });
+    socket.on('disconnect', cleanupOnLeave);
 };
 
 var sendRooms = function (recipients) {
@@ -190,6 +195,7 @@ io.sockets.on('connection', function (socket) {
     };
 
     socket.on("addRoom", function (data) {
+        // TODO: Merge this functionality with room.addPlayer
         var name = "room" + nextRoom++,
             room = new Room(name);
         rooms[name] = room;
@@ -198,6 +204,7 @@ io.sockets.on('connection', function (socket) {
     });
 
     socket.on("joinRoom", function (data) {
+        // TODO: Merge this functionality with room.addPlayer
         var room = rooms[data.name];
         if (!room.players[data.team][data.player]) {
             joinRoom(room, data.team, data.player);
