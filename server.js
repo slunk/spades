@@ -49,26 +49,26 @@ var Room = function (name) {
         }
     };
 
-	this.numPlayers = function () {
-		var total = 0;
-		for (var team in this.players) {
-			for (var player in this.players[team]) {
-				if (this.players[team][player]) {
-					total++;
-				}
-			}
-		}
-		return total;
-	};
-	
+    this.numPlayers = function () {
+        var total = 0;
+        for (var team in this.players) {
+            for (var player in this.players[team]) {
+                if (this.players[team][player]) {
+                    total++;
+                }
+            }
+        }
+        return total;
+    };
+    
     this.isFull = function () {
         return this.numPlayers() == 4;
     };
 };
 
 var users = {},
-	rooms = {},
-	nextRoom = 0;
+    rooms = {},
+    nextRoom = 0;
 
 var registerPlayerEvents = function (socket, room, team, player) {
     var teammate = (player == "player0") ? "player1" : "player0";

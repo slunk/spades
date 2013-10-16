@@ -3,10 +3,10 @@
 <script src="/socket.io/socket.io.js"></script>
 <script src="card.js"></script>
 <script>
-    var socket = io.connect(window.location.hostname, {'sync disconnect on unload': true })
-        , rooms = []
-        , cards = []
-        , player = null;
+    var socket = io.connect(window.location.hostname, {'sync disconnect on unload': true }),
+        rooms = [],
+        cards = [],
+        player = null;
 
     socket.on('sit', function (data) {
         $('#' + data.place + '-sitbtn')
@@ -32,9 +32,9 @@
                 } else {
                     var menuItem = $("<button id=\"" + key + "\">Join</button>");
                     roomList.append(menuItem);
-                    var r = key.split('-')[0]
-                        , t = key.split('-')[1]
-                        , p = key.split('-')[2];
+                    var r = key.split('-')[0],
+                        t = key.split('-')[1],
+                        p = key.split('-')[2];
                     menuItem.click(makeCb(r, t, p));
                 }
             }
@@ -52,18 +52,18 @@
     });
 
     var displayCard = function (card) {
-	    var fname = card.imageFileName();
-	    var id = card.id;
-	    var n = cards.indexOf(card);
-	    var style = "position:relative;z-index: " + n + ";";
-	    style += "display:inline-block;height:150px;";
-	    $("#cardcontainer").append("<img class=\"card\" name=\"" + id + "\" id=\"card-" + id + "\" src=\"images/" + fname + "\" style=\"" + style + "\"></img>");
-	    $("#" + id).mouseover(function () {
-	        $("#" + id).css("top", "-20px");
-	    });
-	    $("#" + id).mouseout(function () {
-	        $("#" + id).css("top", "0px");
-	    });
+        var fname = card.imageFileName(),
+           id = card.id,
+           n = cards.indexOf(card),
+           style = "position:relative;z-index: " + n + ";";
+        style += "display:inline-block;height:150px;";
+        $("#cardcontainer").append("<img class=\"card\" name=\"" + id + "\" id=\"card-" + id + "\" src=\"images/" + fname + "\" style=\"" + style + "\"></img>");
+        $("#" + id).mouseover(function () {
+            $("#" + id).css("top", "-20px");
+        });
+        $("#" + id).mouseout(function () {
+            $("#" + id).css("top", "0px");
+        });
     };
 
     socket.on("PROMPT_BID", function (data) {
@@ -119,7 +119,7 @@
                 $(this).css("top", "0px");
             });
             $('#card-' + card.id).click(function (event) {
-                var id = +event.target.name, idx;
+                var id = +event.target.name,idx;
                 socket.emit("play", {card: id});
                 for (idx = 0; idx < cards.length; idx++) {
                     if (id == cards[idx].id) {
@@ -138,9 +138,9 @@
     });
 
     socket.on("play", function (data) {
-        var card = new Card(+data.card)
-            , fname = card.imageFileName()
-            , style = "height:150px;";
+        var card = new Card(+data.card),
+            fname = card.imageFileName(),
+            style = "height:150px;";
         $("#" + data.team + "-" + data.player).append("<img src=\"images/" + fname + "\" style=\"" + style + "\"></img>");
     });
 
@@ -196,9 +196,9 @@
         });
 
         $('#leave').click(function () {
-			$("#cardcontainer").empty();
-			$('#appcontainer').hide();
-			$('#preliminary').show();
+            $("#cardcontainer").empty();
+            $('#appcontainer').hide();
+            $('#preliminary').show();
             socket.emit("leave");
         });
     });
@@ -264,7 +264,7 @@
             <input id="nickinput" type="text" placeholder="Nickname"></input>
             <button id="nicksubmit">Submit</button>
         </div>
-		<h3>Rooms:</h3>
+        <h3>Rooms:</h3>
         <ul id="room-list"></ul>
         <button id="addroom">Create</button>
         <table>
