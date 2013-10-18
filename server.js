@@ -8,10 +8,9 @@ var connect = require('connect'),
 app = http.createServer(connect().use(connect.static('public')));
 io = socketio.listen(app);
 
-/*io.configure(function () { 
-    io.set("transports", ["xhr-polling"]); 
-    io.set("polling duration", 10); 
-});*/
+io.configure(function () {
+    io.set("transports", ["websocket"]);
+});
 
 app.listen(process.env.PORT || 1337);
 
