@@ -19,7 +19,7 @@ var Room = function (name) {
     this.name = name;
     this.players = {team0: {player0: null, player1: null},
                     team1: {player0: null, player1: null}};
-    this.game = new spades.Game();
+
     this.gameInProgress = false;
 
     this.addPlayer = function (socket, team, player) {
@@ -34,20 +34,22 @@ var Room = function (name) {
         io.sockets.in(this.name).emit(msg, data);
     };
 
-    this.sendMessage = function (message) {
-        var player = null, team = null;
-        if (message.recipient == "all") {
-            this.emit(message.action, message.data);
-        } else if (message.recipient == "team0" || message.recipient == "team1") {
-            team = message.recipient;
-            this.players[team].player0.emit(message.action, message.data);
-            this.players[team].player1.emit(message.action, message.data);
-        } else {
-            player = message.recipient.player;
-            team = message.recipient.team;
-            this.players[team][player].emit(message.action, message.data);
-        }
+    this.sendToAll = function (action, data) {
+        this.emit(action, data);
     };
+
+    this.sendToTeam = function (team, action, data) {
+        this.sendToPlayer(team, 'player0', action, data);
+        this.sendToPlayer(team, 'player1', action, data);
+    };
+
+    this.sendToPlayer = function (team, player, action, data) {
+        this.players[team][player].emit(action, data);
+    };
+
+    this.game = new spades.Game(this.sendToAll.bind(this),
+        this.sendToTeam.bind(this),
+        this.sendToPlayer.bind(this));
 
     this.numPlayers = function () {
         var total = 0;
@@ -91,11 +93,10 @@ var registerPlayerEvents = function (socket, room, team, player) {
         tmsocket.emit("bidAccept", bid);
         tmsocket.on("bidAccept", function (data) {
             if (data.accept) {
-                var messages = room.game.bid(team, spades.bidType[bid]);
+                room.emit('bidConfirmed', null);
+                room.game.bid(team, spades.bidType[bid]);
                 room.emit('msg', {name: "server",
                     text: users[tmsocket.id].name + " accepts."});
-                room.emit('bidConfirmed', null);
-                messages.forEach(room.sendMessage.bind(room));
             } else {
                 room.emit('msg', {name: "server",
                     text: users[tmsocket.id].name + " declines."});
@@ -106,11 +107,8 @@ var registerPlayerEvents = function (socket, room, team, player) {
     });
 
     socket.on("play", function (data) {
-        var messages = room.game.play(team, player, new card.Card(data.card));
         room.emit("play", {team: team, player: player, card: data.card});
-        setTimeout(function () {
-            messages.forEach(room.sendMessage.bind(room));
-        }, 2000);
+        room.game.play(team, player, new card.Card(data.card));
     });
 
     socket.on('msg', function (data) {
@@ -205,7 +203,7 @@ io.sockets.on('connection', function (socket) {
 
             if (room.isFull() && !room.gameInProgress) {
                 room.gameInProgress = true;
-                room.sendMessage(room.game.reset());
+                room.game.reset();
             }
             sendRooms(io.sockets.in('lobby'));
         }

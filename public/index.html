@@ -67,6 +67,7 @@
     };
 
     socket.on("PROMPT_BID", function (data) {
+        console.log("all up in here");
         $('.bidbtn').each(function () {
             this.disabled = false;
         });

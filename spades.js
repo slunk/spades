@@ -119,17 +119,28 @@ var bidType = {
  * play methods. These all return server action(s) which the server must pass on
  * to the clients.
  */
-exports.Game = function () {
+exports.Game = function (sendToAll, sendToTeam, sendToPlayer) {
     this.MAX_SCORE = 800;
     this.team0 = new Team("team0");
     this.team1 = new Team("team1");
     this.roundInfo = {};
+    this.sendToAll = sendToAll;
+    this.sendToTeam = sendToTeam;
+    this.sendToPlayer = sendToPlayer;
+
+    this.sendToCurrPlayer = function (action, data) {
+        this.sendToPlayer(this.currPlayer.team, this.currPlayer.player,
+            action, data);
+    };
+
+    this.sendCards = function (team, player) {
+        var cards = this[team][player].cards;
+        this.sendToPlayer(team, player, SERVER_ACTION.SEND_CARDS, cards);
+    };
 
     /* reset
      *
      * Reset the game to default settings before any bids or plays have occured.
-     *
-     * return a single server action
      */
     this.reset = function () {
         this.team0.score = 0;
@@ -139,9 +150,7 @@ exports.Game = function () {
         this.currTeam = "team0";
         this.deal();
         this.resetRoundInfo();
-        return {action: SERVER_ACTION.PROMPT_BID,
-            recipient: "team0",
-            data: null};
+        this.sendToTeam('team0', SERVER_ACTION.PROMPT_BID, null);
     };
 
     /* bid
@@ -151,37 +160,26 @@ exports.Game = function () {
      * Either make this.currTeam's bid NOT blind this round if instructed to
      * show cards or set the bid to whatever is passed in. If only one team has
      * placed a bid this round, change this.currTeam to the other team.
-     *
-     * return list of server actions
      */
     this.bid = function (team, bid) {
-        var serverActions = [];
         if (this.roundInfo[team].bid.blind) {
-            serverActions.push({action: SERVER_ACTION.SEND_CARDS,
-                recipient: {team: team, player: "player0"},
-                data: this[team].player0.cards});
-            serverActions.push({action: SERVER_ACTION.SEND_CARDS,
-                recipient: {team: team, player: "player1"},
-                data: this[team].player1.cards});
+            this.sendCards(team, 'player0');
+            this.sendCards(team, 'player1');
         }
         if (bid == bidType["show-cards"]) {
             this.roundInfo[team].bid.blind = false;
-            serverActions.push({action: SERVER_ACTION.PROMPT_BID,
-                recipient: this.currTeam, data: null});
-            return serverActions;
+            this.sendToTeam(this.currTeam, SERVER_ACTION.PROMPT_BID);
+        } else {
+            this.roundInfo[team].bid.val = bid.val;
+            this.roundInfo[team].bid.mult = bid.mult;
+            if (!this.bidsIn()) {
+                this.rotateTeam();
+                this.sendToTeam(this.currTeam, SERVER_ACTION.PROMPT_BID);
+            } else {
+                this.sendToCurrPlayer(SERVER_ACTION.PROMPT_PLAY,
+                    {playable: this.playableCards(this.currPlayer.team, this.currPlayer.player)});
+            }
         }
-        this.roundInfo[team].bid.val = bid.val;
-        this.roundInfo[team].bid.mult = bid.mult;
-        if (!this.bidsIn()) {
-            this.rotateTeam();
-            serverActions.push({action: SERVER_ACTION.PROMPT_BID,
-                recipient: this.currTeam, data: null});
-            return serverActions;
-        }
-        serverActions.push({action: SERVER_ACTION.PROMPT_PLAY,
-            recipient: this.currPlayer,
-            data: {playable: this.playableCards(this.currPlayer.team, this.currPlayer.player)}});
-        return serverActions;
     };
 
     /* play
@@ -190,11 +188,8 @@ exports.Game = function () {
      *
      * Add the (player, card) pair to the current book, if every card is in,
      * determine the winner, and update game state.
-     *
-     * return a list of server actions.
      */
     this.play = function (team, player, card) {
-        var serverActions = [];
         var currBook = this.roundInfo.currBook;
         if (card.suit() == "spade") {
             this.roundInfo.spadesPlayed = true;
@@ -209,32 +204,25 @@ exports.Game = function () {
             this.currPlayer = {team: winner.team, player: winner.player};
             this.roundInfo.currBook = [];
             this.roundInfo.turn++;
-            serverActions.push({action: SERVER_ACTION.SEND_BOOK_WINNER,
-                recipient: "all",
-                data: {team: winner.team, player: winner.player, books: numBooks}});
+            this.sendToAll(SERVER_ACTION.SEND_BOOK_WINNER,
+                {team: winner.team, player: winner.player, books: numBooks});
             if (this.roundOver()) {
                 this.updateScores();
-                serverActions.push({action: SERVER_ACTION.SEND_SCORES,
-                    recipient: "all",
-                    data: {team0: this.team0.score, team1: this.team1.score}});
+                this.sendToAll(SERVER_ACTION.SEND_SCORES, {team0: this.team0.score, team1: this.team1.score});
                 this.currPlayer = this.lastStartingPlayer;
                 this.rotatePlayer();
                 this.lastStartingPlayer = this.currPlayer;
                 if (!this.gameOver()) {
                     this.deal();
                     this.resetRoundInfo();
-                    serverActions.push({action: SERVER_ACTION.PROMPT_BID,
-                        recipient: this.currTeam});
+                    this.sendToTeam(this.currTeam, SERVER_ACTION.PROMPT_BID);
                 }
-                return serverActions;
             }
         } else {
             this.rotatePlayer();
         }
-        serverActions.push({action: SERVER_ACTION.PROMPT_PLAY,
-            recipient: this.currPlayer,
-            data: {playable: this.playableCards(this.currPlayer.team, this.currPlayer.player)}});
-        return serverActions;
+        this.sendToCurrPlayer(SERVER_ACTION.PROMPT_PLAY,
+            {playable: this.playableCards(this.currPlayer.team, this.currPlayer.player)});
     };
 
     /* helper functions */
