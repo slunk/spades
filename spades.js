@@ -227,6 +227,17 @@ exports.Game = function (sendToAll, sendToTeam, sendToPlayer) {
 
     /* helper functions */
 
+    this.promptPlay = function () {
+        var team = this.currPlayer.team,
+            player = this.currPlayer.player,
+            playable = this.playableCards(team, player);
+        this.sendToCurrPlayer(SERVER_ACTION.PROMPT_PLAY, {playable: playable});
+    };
+
+    this.promptBid = function () {
+        this.sendToTeam(this.currTeam, SERVER_ACTION.PROMPT_BID);
+    };
+
     this.determineWinner = function (book) {
         var first = book[0];
         var others = book.slice(1, book.length);
@@ -338,12 +349,13 @@ exports.Game = function (sendToAll, sendToTeam, sendToPlayer) {
         }
     };
 
+    this.bidIn = function (team) {
+        var bid = this.roundInfo[team].bid;
+        return 'val' in bid && 'mult' in bid && 'blind' in bid;
+    };
+
     this.bidsIn = function () {
-        var bidIn = function (team) {
-            var bid = this.roundInfo[team].bid;
-            return 'val' in bid && 'mult' in bid && 'blind' in bid;
-        };
-        return bidIn.call(this, "team0") && bidIn.call(this, "team1");
+        return this.bidIn.call(this, "team0") && this.bidIn.call(this, "team1");
     };
 
     this.roundOver = function () {

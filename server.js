@@ -46,6 +46,10 @@ var Room = function (name) {
         this.players[team][player].emit(action, data);
     };
 
+    this.sendCards = function (team, player) {
+        this.game.sendCards(team, player);
+    };
+
     this.game = new spades.Game(this.sendToAll.bind(this),
         this.sendToTeam.bind(this),
         this.sendToPlayer.bind(this));
@@ -200,9 +204,20 @@ io.sockets.on('connection', function (socket) {
         if (!room.players[data.team][data.player]) {
             joinRoom(room, data.team, data.player);
 
-            if (room.isFull() && !room.gameInProgress) {
-                room.gameInProgress = true;
-                room.game.reset();
+            if (room.isFull()) {
+                if (!room.gameInProgress) {
+                    room.gameInProgress = true;
+                    room.game.reset();
+                } else {
+                    if (room.game.bidIn(data.team)) {
+                        room.sendCards(data.team, data.player);
+                        if (room.game.currPlayer.team == data.team && room.game.currPlayer.player == data.player) {
+                                room.game.promptPlay();
+                        }
+                    } else if (room.game.currTeam == data.team) {
+                        room.game.promptBid();
+                    }
+                }
             }
             sendRooms(io.sockets.in('lobby'));
         }

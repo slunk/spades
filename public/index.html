@@ -198,6 +198,12 @@
 
         $('#leave').click(function () {
             $("#cardcontainer").empty();
+            $("#chattext").empty();
+            $(".score").empty();
+            $(".books").empty();
+            $('.bidbtn').each(function () {
+                this.disabled = true;
+            });
             $('#appcontainer').hide();
             $('#preliminary').show();
             socket.emit("leave");
@@ -323,13 +329,13 @@
                 </tr>
                 <tr>
                     <td>Score</td>
-                    <td id="score-team0">0</td>
-                    <td id="score-team1">0</td>
+                    <td class="score" id="score-team0">0</td>
+                    <td class="score" id="score-team1">0</td>
                 </tr>
                 <tr>
                     <td>Books</td>
-                    <td id="books-team0"></td>
-                    <td id="books-team1"></td>
+                    <td class="books" id="books-team0"></td>
+                    <td class="books" id="books-team1"></td>
                 </tr>
             </table>
         </div>
