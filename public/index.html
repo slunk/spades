@@ -9,8 +9,9 @@
         player = null;
 
     socket.on('sit', function (data) {
-        $('#' + data.place + '-sitbtn')
-            .replaceWith("<div id=\"" + data.place + "-name\">" + data.user + "</div>");
+        /*$('#' + data.place + '-sitbtn')
+            .replaceWith("<div id=\"" + data.place + "-name\">" + data.user + "</div>");*/
+        $('#' + data.place + '-name').text(data.user);
     });
 
     socket.on('rooms', function (data) {
@@ -43,12 +44,13 @@
     });
 
     socket.on('leave', function (data) {
-        $('#' + data.team + "-" + data.player + "-name")
+        $('#' + data.place + '-name').empty();
+        /*$('#' + data.team + "-" + data.player + "-name")
             .replaceWith("<div class=\"sitbtn\" id=\"" + data.team + "-" + data.player + "-sitbtn\"></div>");
         $('#' + data.team + "-" + data.player + "-sitbtn")
             .click(function () {
                 socket.emit('sit', {team: data.team, player: data.player});
-            });
+            });*/
     });
 
     var displayCard = function (card) {
@@ -146,7 +148,7 @@
     });
 
     socket.on('SEND_BOOK_WINNER', function (data) {
-        $('.temp').empty();
+        $('.card-container').empty();
         $('#books-' + data.team).text(data.books); 
     });
 
@@ -184,12 +186,12 @@
             }
         });
 
-        $('.sitbtn').click(function (event) {
+        /*$('.sitbtn').click(function (event) {
             player = event.target.id.split("-").slice(0,2).join("-");
             data = event.target.id.split("-");
             $('.sitbtn').hide();
             socket.emit("sit", {"team": data[0], "player": data[1]});
-        });
+        });*/
 
         $('.bidbtn').click(function (event) {
             var bid = event.target.id;
@@ -199,11 +201,12 @@
         $('#leave').click(function () {
             $("#cardcontainer").empty();
             $("#chattext").empty();
+            $('.name').empty();
             $(".score").empty();
             $(".books").empty();
             $('.bidbtn').each(function () {
                 this.disabled = true;
-            });
+        });
             $('#appcontainer').hide();
             $('#preliminary').show();
             socket.emit("leave");
@@ -259,7 +262,7 @@
         padding-right: 0.4em;
     }
 
-    .temp {
+    .card-container {
         height: 250px;
     }
 
@@ -282,20 +285,20 @@
         <div style="width:100%;height:270px;">
 
         <div class="player" style="background-color:LightGrey;">
-            <div class="temp" id="team0-player0"></div>
-            <div class="sitbtn" id="team0-player0-sitbtn"></div>
+            <div class="card-container" id="team0-player0"></div>
+            <div class="name" id="team0-player0-name"></div>
         </div>
         <div class="player" style="background-color:white;">
-            <div class="temp" id="team1-player0"></div>
-            <div class="sitbtn" id="team1-player0-sitbtn"></div>
+            <div class="card-container" id="team1-player0"></div>
+            <div class="name" id="team1-player0-name"></div>
         </div>
         <div class="player" style="background-color:LightGrey;">
-            <div class="temp" id="team0-player1"></div>
-            <div class="sitbtn" id="team0-player1-sitbtn"></div>
+            <div class="card-container" id="team0-player1"></div>
+            <div class="name" id="team0-player1-name"></div>
         </div>
         <div class="player" style="background-color:white;">
-            <div class="temp" id="team1-player1"></div>
-            <div class="sitbtn" id="team1-player1-sitbtn"></div>
+            <div class="card-container" id="team1-player1"></div>
+            <div class="name" id="team1-player1-name"></div>
         </div>
 
         </div>

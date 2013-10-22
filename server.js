@@ -72,6 +72,7 @@ var Room = function (name) {
 };
 
 var users = {},
+    nextUser = 0,
     rooms = {},
     nextRoom = 0;
 
@@ -167,7 +168,7 @@ var sendRooms = function (recipients) {
 };
 
 io.sockets.on('connection', function (socket) {
-    users[socket.id] = 'guest';
+    users[socket.id] = 'guest' + nextUser++;
     socket.set('name', 'guest');
     socket.join('lobby');
     sendRooms(socket);
