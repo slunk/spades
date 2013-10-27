@@ -18,7 +18,6 @@ var Room = function (name) {
     this.name = name;
     this.players = {team0: {player0: null, player1: null},
                     team1: {player0: null, player1: null}};
-
     this.gameInProgress = false;
 
     this.addPlayer = function (socket, team, player) {
@@ -43,6 +42,10 @@ var Room = function (name) {
     };
 
     this.sendToPlayer = function (team, player, action, data) {
+        console.log(team);
+        console.log(player);
+        console.log(action);
+        console.log(data);
         this.players[team][player].emit(action, data);
     };
 
@@ -50,9 +53,10 @@ var Room = function (name) {
         this.game.sendCards(team, player);
     };
 
-    this.game = new spades.Game(this.sendToAll.bind(this),
-        this.sendToTeam.bind(this),
-        this.sendToPlayer.bind(this));
+    this.game = new spades.GameInterface({sendToAll: this.sendToAll.bind(this),
+            sendToTeam: this.sendToTeam.bind(this),
+            sendToPlayer: this.sendToPlayer.bind(this)
+        });
 
     this.numPlayers = function () {
         var total = 0;

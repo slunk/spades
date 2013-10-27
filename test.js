@@ -3,228 +3,274 @@ var assert = require('assert'),
     spades = require('./spades.js'),
     card = require('./public/card.js');
 
-describe("Model's", function () {
-    var game;
+describe("Bid:", function () {
+    var bid;
 
     beforeEach(function (done) {
-        var placeholder = function () {};
-        game = new spades.Game(placeholder, placeholder, placeholder);
-        game.reset();
+        bid = new spades.Bid();
         done();
     });
 
-    describe("reset method", function () {
-        it("should set both teams' scores to 0", function (done) {
-            assert.equal(game.team0.score, 0);
-            assert.equal(game.team1.score, 0);
-            done();
-        });
-        it("should deal each team 13 cards", function (done) {
-            assert.equal(game.team0.player0.cards.length, 13);
-            assert.equal(game.team0.player1.cards.length, 13);
-            assert.equal(game.team1.player0.cards.length, 13);
-            assert.equal(game.team1.player1.cards.length, 13);
-            done();
-        });
-        it("should initialize the current round's state", function (done) {
-            assert.equal(game.roundInfo.turn, 1);
-            assert.deepEqual(game.roundInfo.currBook, []);
-            assert.deepEqual(game.roundInfo.team0.books, []);
-            assert.deepEqual(game.roundInfo.team0.bid, {blind: true});
-            assert.deepEqual(game.roundInfo.team1.books, []);
-            assert.deepEqual(game.roundInfo.team1.bid, {blind: true});
-            assert.equal(game.roundInfo.team0.bid.blind, true);
-            done();
-        });
-        it("should set up the current player and current team", function (done) {
-            assert.deepEqual(game.currPlayer, {team: "team1", player: "player0"});
-            assert.equal(game.currTeam, "team0");
+    describe("constructor", function () {
+        it("should set blind to true.", function (done) {
+            assert.equal(bid.blind(), true);
             done();
         });
     });
 
-    describe("bid method", function (done) {
-
-        it("should set blind to false when a team wants to show cards", function (done) {
-            game.bid("team0", spades.bidType["show-cards"]);
-            assert.equal(game.roundInfo.team0.bid.blind, false);
-            done();
-        });
-
-        it("should bid information when a team bids after seeing their cards", function (done) {
-            game.bid("team0", spades.bidType["show-cards"]);
-            game.bid("team0", spades.bidType["board"]);
-            assert.equal(game.roundInfo.team0.bid.val, 4);
-            assert.equal(game.roundInfo.team0.bid.mult, 1);
-            done();
-        });
-
-        it("should store bid information if a team bids blind", function (done) {
-            game.bid("team0", spades.bidType["show-cards"]);
-            game.bid("team0", spades.bidType["board"]);
-            game.bid("team1", spades.bidType["2-for-10"]);
-            assert(game.roundInfo.team1.bid.blind);
+    describe("getters and setters", function () {
+        it("should work.", function (done){
+            bid.setBlind(false);
+            assert.equal(bid.blind(), false);
+            bid.setMult(2);
+            assert.equal(bid.mult(), 2);
+            bid.setVal(10);
+            assert.equal(bid.val(), 10);
             done();
         });
     });
 
-    describe("determineWinner method", function (done) {
-        var make_book = function (a, b, c, d) {
-            return [
-                {card: new card.Card(a)},
-                {card: new card.Card(b)},
-                {card: new card.Card(c)},
-                {card: new card.Card(d)}
-            ];
-        };
-
-        var check_winner = function (book, gold_winner) {
-            assert.equal(game.determineWinner(book).card.id, gold_winner);
-        };
-
-        it("should pick the highest card played", function (done) {
-            check_winner(make_book(12, 11, 10, 9), 12);
-            done();
-        });
-        it("should make the suit of the first card trump other suites except spades", function (done) {
-            check_winner(make_book(12, 13, 10, 9), 12);
-            check_winner(make_book(4, 13, 11, 10), 11);
-            done();
-        });
-        it("should make spades trump all other suits", function (done) {
-            check_winner(make_book(12, 50, 11, 10), 50);
-            check_winner(make_book(50, 49, 11, 10), 50);
+    describe("_points method", function () {
+        it("should return the correct points.", function (done) {
+            assert.equal(bid._points(false, 4, 1), 40);
+            assert.equal(bid._points(true, 4, 1), 80);
+            assert.equal(bid._points(true, 10, 2), 400);
             done();
         });
     });
 
-    describe("scores", function (done) {
-        it("should update correctly", function (done) {
-            game.roundInfo.team0.books = {length: 4};
-            game.roundInfo.team0.bid.val = 4;
-            game.roundInfo.team0.bid.mult = 1;
-            game.roundInfo.team0.bid.blind = false;
-            game.roundInfo.team1.books = {length: 9};
-            game.roundInfo.team1.bid.val = 10;
-            game.roundInfo.team1.bid.mult = 2;
-            game.roundInfo.team1.bid.blind = true;
-            game.updateScores();
-            assert.equal(game.team0.score, 40);
-            assert.equal(game.team1.score, -400);
-            game.team0.score = 0;
-            game.team1.score = 0;
-            game.roundInfo.team0.books = {length: 7};
-            game.roundInfo.team0.bid.val = 4;
-            game.roundInfo.team0.bid.mult = 1;
-            game.roundInfo.team0.bid.blind = true;
-            game.roundInfo.team1.books = {length: 6};
-            game.roundInfo.team1.bid.val = 7;
-            game.roundInfo.team1.bid.mult = 1;
-            game.roundInfo.team1.bid.blind = false;
-            game.updateScores();
-            assert.equal(game.team0.score, -80);
-            assert.equal(game.team1.score, -70);
-            done();
-        });
-    });
-
-    describe("playableCards", function (done) {
-        beforeEach(function (done) {
-            game.team0.player0.cards = [new card.Card(0),
-                new card.Card(1),
-                new card.Card(2),
-                new card.Card(44),
-                new card.Card(45)
-            ];
+    describe("isComplete method", function () {
+        it("should return false before mult and val are set", function (done) {
+            assert.equal(bid.isComplete(), false);
             done();
         });
 
-        it("should return a player's entire hand without spades if they are the first to play and spades have not been played", function (done) {
-            var playable = game.playableCards("team0", "player0");
-            assert.equal(playable.length, 3);
-            for (var i = 0; i < playable.length; i++) {
-                assert.notEqual(playable[i].suit(), "spade");
-            }
-            done();
-        });
-
-        it("should return a player's entire hand if they are the first to play and spades have been played", function (done) {
-            var playable = null;
-            game.roundInfo.spadesPlayed = true;
-            playable = game.playableCards("team0", "player0");
-            assert.equal(playable.length, 5);
-            done();
-        });
-
-        it("should return a player's entire hand if they are the first to play and only have spades", function (done) {
-            var playable = null;
-            game.team0.player0.cards = game.team0.player0.cards.filter(function (card) {
-                return card.suit() == "spade";
-            });
-            playable = game.playableCards("team0", "player0");
-            assert.equal(playable.length, 2);
-            for (var i = 0; i < playable.length; i++) {
-                assert.equal(playable[i].suit(), "spade");
-            }
-            done();
-        });
-
-        it("should return cards of the first suit played if available", function (done) {
-            var playable = null;
-            game.roundInfo.currBook = [{card: new card.Card(4)}];
-            playable = game.playableCards("team0", "player0");
-            assert.equal(playable.length, 3);
-            for (var i = 0; i < playable.length; i++) {
-                assert.equal(playable[i].suit(), "heart");
-            }
-            done();
-        });
-
-        it("should return a player's entire hand if they are out of the first suit played available", function (done) {
-            var playable = null;
-            game.roundInfo.currBook = [{card: new card.Card(20)}];
-            playable = game.playableCards("team0", "player0");
-            assert.equal(playable.length, 5);
-            done();
-        });
-    });
-
-    describe("game", function (done) {
-        it("should respond correctly to first four plays", function (done) {
-            game.bid("team0", spades.bidType["board"]);
-            game.bid("team1", spades.bidType["8"]);
-            game.play("team1", "player0", game.team1.player0.cards[0]);
-            actions = game.play("team0", "player1", game.team0.player1.cards[0]);
-            actions = game.play("team1", "player1", game.team1.player1.cards[0]);
-            actions = game.play("team0", "player0", game.team0.player0.cards[0]);
-            assert.equal(game.roundInfo.team0.books.length + game.roundInfo.team1.books.length, 1);
-            assert.equal(game.roundInfo.turn, 2);
+        it("should return true after mult and val are set", function (done) {
+            bid.setMult(1);
+            bid.setVal(4);
+            assert.equal(bid.isComplete(), true);
             done();
         });
     });
 });
 
-/*describe("Server", function(done) {
-    var server = require('./server.js')
-        , url = "http://localhost:1337"
-        , socket1 = io.connect(url)
-        , socket2 = io.connect(url)
-        , socket3 = io.connect(url)
-        , socket4 = io.connect(url);
+describe("TeamData:", function () {
+    var tinfo;
 
-    it("should notify a user when they join a team.", function (done) {
-        socket1.on("sit", function (data) {
-            socket1.removeAllListeners("sit");
-            done();
-        });
-        socket1.emit("sit", {team: "team0", player: "player0"});
+    beforeEach(function (done) {
+        tinfo = new spades.TeamData();
+        done();
     });
 
-    it("should notify other users when one joins a team.", function (done) {
-        socket1.on("sit", function (data) {
-            socket1.removeAllListeners("sit");
+    describe("constructor", function () {
+        it("should set players' cards and team's books to empty arrays", function (done) {
+            assert.deepEqual(tinfo.cards("player0"), []);
+            assert.deepEqual(tinfo.cards("player1"), []);
+            assert.deepEqual(tinfo.books(), []);
             done();
         });
-        socket2.emit("sit", {team: "team0", player: "player1"});
+
+        it("should set bid to an empy bid object.", function (done) {
+            assert.ok(tinfo.bid().equals(new spades.Bid()));
+            done();
+        });
     });
-});*/
+
+    describe("getters and setters", function () {
+        it("should work", function (done) {
+            // cards
+            var cards = [card.Card(0), card.Card(1)];
+            tinfo.setCards('player0', cards);
+            assert.deepEqual(tinfo.cards('player0'), cards);
+            // bid
+            assert.ok(tinfo.bid().equals(new spades.Bid()));
+            // books
+            assert.deepEqual(tinfo.books(), []);
+            tinfo.addBook({});
+            assert.deepEqual(tinfo.books(), [{}]);
+            assert.equal(tinfo.numBooks(), 1);
+            done();
+        });
+    });
+
+    describe("bidComplete method", function () {
+        it("should return true only after the bid's values are set", function (done) {
+            assert.equal(tinfo.bidComplete(), false);
+            tinfo.bid().setMult(2);
+            tinfo.bid().setVal(10);
+            assert.ok(tinfo.bidComplete());
+            done();
+        });
+    });
+
+    describe("numBooks method", function () {
+        it("should return the correct number of books.", function (done) {
+            assert.equal(tinfo.numBooks(), 0);
+            tinfo.addBook("dummy");
+            assert.equal(tinfo.numBooks(), 1);
+            done();
+        });
+    });
+
+    describe("_points", function () {
+        it("should return the correct points.", function (done) {
+            var bid = new spades.Bid();
+            bid.setBlind(false);
+            bid.setMult(1);
+            bid.setVal(4);
+            assert.equal(tinfo._points(bid, 0), -40);
+            assert.equal(tinfo._points(bid, 4), 40);
+            assert.equal(tinfo._points(bid, 7), -40);
+            done();
+        });
+    });
+
+    describe("", function () {
+        it("", function (done) {
+            done();
+        });
+    });
+});
+
+describe("RoundData: ", function () {
+    var round,
+        startingPlayer = {team: 'team0',
+            player: 'player0'
+        };
+
+    beforeEach(function (done) {
+        round = new spades.RoundData(startingPlayer);
+        done();
+    });
+
+    describe("constructor", function () {
+        it("should initialize the turn to 1.", function (done) {
+            assert.equal(round.turn(), 1);
+            done();
+        });
+
+        it("should initialize spades played to false.", function (done) {
+            assert.equal(round.spadesPlayed(), false);
+            done();
+        });
+
+        it("should initialize currBook to an empty list.", function(done) {
+            assert.deepEqual(round.currBook(), []);
+            done();
+        });
+    });
+
+    describe("getters and setters", function () {
+        it("should work", function (done) {
+            // turn
+            assert.equal(round.turn(), 1);
+            round.incrementTurn();
+            assert.equal(round.turn(), 2);
+            // spadesPlayed
+            assert.equal(round.spadesPlayed(), false);
+            round.setSpadesPlayed(true);
+            assert.equal(round.spadesPlayed(), true);
+            // current book
+            assert.equal(round.currBook().length, 0);
+            // books
+            assert.equal(round.numBooks('team0'), 0);
+            round.addBook('team0', {});
+            assert.equal(round.numBooks('team0'), 1);
+            // bid
+            assert.ok(round.bid("team0").equals(new spades.Bid()));
+            // currPlayer
+            assert.deepEqual(round.currPlayer(), startingPlayer);
+            done();
+        });
+    });
+
+    describe("deal method", function () {
+        it("should assign each player 13 cards.", function (done) {
+            round.deal();
+            assert.equal(round.cards('team0', 'player0').length, 13);
+            assert.equal(round.cards('team0', 'player1').length, 13);
+            assert.equal(round.cards('team1', 'player0').length, 13);
+            assert.equal(round.cards('team1', 'player1').length, 13);
+            done();
+        });
+    });
+
+    describe("_playableCards method", function () {
+        var cf = new spades.CardFactory(),
+            threeOfHearts = cf.getCard("3", "heart"),
+            fourOfHearts = cf.getCard("4", "heart"),
+            fiveOfHearts = cf.getCard("5", "heart"),
+            sixOfHearts = cf.getCard("6", "heart"),
+            sevenOfClubs = cf.getCard("7", "club"),
+            twoOfSpades = cf.getCard("2", "spades"),
+            big = cf.getCard("B");
+
+
+        it("should return all cards except spades when player is first unless spades have been played or player only has spades", function (done) {
+            var cards = [threeOfHearts, fourOfHearts, sevenOfClubs, twoOfSpades],
+                book = [];
+            assert.equal(round._playableCards(cards, book, false).length, 3);
+            assert.equal(round._playableCards(cards, book, true).length, 4);
+            cards = [twoOfSpades, big];
+            assert.equal(round._playableCards(cards, book, false).length, 2);
+            assert.equal(round._playableCards(cards, book, true).length, 2);
+            done();
+        });
+
+        // TODO: test other conditions
+    });
+
+    describe("_bookWinner method", function () {
+        var cf = new spades.CardFactory(),
+            threeOfHearts = {card: cf.getCard("3", "heart")},
+            fourOfHearts = {card: cf.getCard("4", "heart")},
+            fiveOfHearts = {card: cf.getCard("5", "heart")},
+            sixOfHearts = {card: cf.getCard("6", "heart")},
+            sevenOfClubs = {card: cf.getCard("7", "club")},
+            twoOfSpades = {card: cf.getCard("2", "spades")},
+            big = {card: cf.getCard("B")};
+
+
+        it("should return the highest card played if all same suit", function (done) {
+            var first = threeOfHearts,
+                others = [fourOfHearts, fiveOfHearts, sixOfHearts];
+            assert.equal(round._bookWinner(first, others), sixOfHearts);
+            done();
+        });
+
+        // TODO: test other conditions
+    });
+
+    describe("", function () {
+        it("", function (done) {
+            done();
+        });
+    });
+});
+
+describe("GameData", function () {
+    var game;
+
+    beforeEach(function (done) {
+        game = new spades.GameData();
+        done();
+    });
+
+    describe("constructor", function () {
+        it("should initialize team scores to 0.", function (done) {
+            assert.equal(game.score("team0"), 0);
+            assert.equal(game.score("team1"), 0);
+            done();
+        });
+    });
+
+    describe("getters and setters", function () {
+        it("should work.", function (done) {
+            // bid
+            assert.ok(game.bid("team0").equals(new spades.Bid()));
+            // currPlayer
+            assert.deepEqual(game.currPlayer(), {team: 'team1', player: 'player0'});
+            done();
+        });
+    });
+});

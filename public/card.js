@@ -23,7 +23,7 @@ var Card = function (id) {
             return "B";
         }
         if (this.id % 13 < 9) {
-            return (this.id % 13) + 2;
+            return "" + ((this.id % 13) + 2);
         } else if (this.id % 13 == 9) {
             return "J";
         } else if (this.id % 13 == 10) {
