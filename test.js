@@ -136,7 +136,16 @@ describe("RoundData: ", function () {
     var round,
         startingPlayer = {team: 'team0',
             player: 'player0'
-        };
+        },
+        cf = new spades.CardFactory(),
+        threeOfHearts = cf.getCard("3", "heart"),
+        fourOfHearts = cf.getCard("4", "heart"),
+        fiveOfHearts = cf.getCard("5", "heart"),
+        sixOfHearts = cf.getCard("6", "heart"),
+        sevenOfClubs = cf.getCard("7", "club"),
+        twoOfSpades = cf.getCard("2", "spades"),
+        big = cf.getCard("B");
+
 
     beforeEach(function (done) {
         round = new spades.RoundData(startingPlayer);
@@ -172,7 +181,9 @@ describe("RoundData: ", function () {
             assert.equal(round.spadesPlayed(), true);
             // current book
             assert.equal(round.currBook().length, 0);
-            // books
+            // currBookWinner
+            assert.equal(round.currBookWinner(), undefined);
+            // books and numBooks
             assert.equal(round.numBooks('team0'), 0);
             round.addBook('team0', {});
             assert.equal(round.numBooks('team0'), 1);
@@ -180,6 +191,11 @@ describe("RoundData: ", function () {
             assert.ok(round.bid("team0").equals(new spades.Bid()));
             // currPlayer
             assert.deepEqual(round.currPlayer(), startingPlayer);
+            // cards
+            assert.equal(round.cards('team0', 'player0').length, 13);
+            assert.equal(round.cards('team0', 'player1').length, 13);
+            assert.equal(round.cards('team1', 'player0').length, 13);
+            assert.equal(round.cards('team1', 'player1').length, 13);
             done();
         });
     });
@@ -196,16 +212,6 @@ describe("RoundData: ", function () {
     });
 
     describe("_playableCards method", function () {
-        var cf = new spades.CardFactory(),
-            threeOfHearts = cf.getCard("3", "heart"),
-            fourOfHearts = cf.getCard("4", "heart"),
-            fiveOfHearts = cf.getCard("5", "heart"),
-            sixOfHearts = cf.getCard("6", "heart"),
-            sevenOfClubs = cf.getCard("7", "club"),
-            twoOfSpades = cf.getCard("2", "spades"),
-            big = cf.getCard("B");
-
-
         it("should return all cards except spades when player is first unless spades have been played or player only has spades", function (done) {
             var cards = [threeOfHearts, fourOfHearts, sevenOfClubs, twoOfSpades],
                 book = [];
