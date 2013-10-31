@@ -136,28 +136,42 @@ var Bid = function () {
     this._mult = null;
     this._val = null;
 
+    // getters
+
     this.blind = function () {
         return this._blind;
-    };
-
-    this.setBlind = function (val) {
-        this._blind = val;
     };
 
     this.mult = function () {
         return this._mult;
     };
 
-    this.setMult = function (num) {
-        this._mult = num;
+    this.points = function () {
+        return this._points(this.blind(), this.val(), this.mult());
     };
 
     this.val = function () {
         return this._val;
     };
 
+    // setters
+
+    this.setBlind = function (val) {
+        this._blind = val;
+    };
+
+    this.setMult = function (num) {
+        this._mult = num;
+    };
+
     this.setVal = function (num) {
         this._val = num;
+    };
+
+    // others
+
+    this._points = function (blind, val, mult) {
+        return blind ? 20 * val * mult : 10 * val * mult;
     };
 
     this.equals = function (other) {
@@ -165,14 +179,6 @@ var Bid = function () {
             sameMult = this.mult() == other.mult(),
             sameVal = this.val() == other.val();
         return sameBlind && sameMult && sameVal;
-    };
-
-    this._points = function (blind, val, mult) {
-        return blind ? 20 * val * mult : 10 * val * mult;
-    };
-
-    this.points = function () {
-        return this._points(this.blind(), this.val(), this.mult());
     };
 
     this.isComplete = function () {
@@ -188,12 +194,42 @@ var TeamData = function () {
     this._books = [];
     this._bid = new Bid();
 
+    // getters
+
+    this.bid = function () {
+        return this._bid;
+    };
+
+    this.books = function () {
+        return this._books;
+    };
+
     this.cards = function (player) {
         return this['_' + player];
     };
 
+    this.numBooks = function () {
+        return this.books().length;
+    };
+
+    this.points = function () {
+        return this._points(this.bid(), this.numBooks());
+    };
+    
+    // setters
+
     this.setCards = function (player, cards) {
         this['_' + player] = cards;
+    };
+
+    // others
+
+    this.addBook = function (book) {
+        this._books.push(book);
+    };
+
+    this.bidComplete = function () {
+        return this._bid.isComplete();
     };
 
     this.play = function (player, card) {
@@ -208,36 +244,12 @@ var TeamData = function () {
         return true;
     };
 
-    this.books = function () {
-        return this._books;
-    };
-
-    this.numBooks = function () {
-        return this.books().length;
-    };
-
-    this.addBook = function (book) {
-        this._books.push(book);
-    };
-
-    this.bid = function () {
-        return this._bid;
-    };
-
-    this.bidComplete = function () {
-        return this._bid.isComplete();
-    };
-
     this._points = function (bid, numBooks) {
         var points = bid.points();
         if (numBooks < bid.val() || numBooks >= bid.val() + 3) {
             points = -points;
         }
         return points;
-    };
-
-    this.points = function () {
-        return this._points(this.bid(), this.numBooks());
     };
 };
 
@@ -260,8 +272,118 @@ var RoundData = function (startingPlayer) {
     this._team1 = new TeamData();
     this._currPlayer = startingPlayer;
 
+    // getters
+
+    this.bid = function (team) {
+        return this.teamData(team).bid();
+    };
+
+    this.cards = function (team, player) {
+        return this.teamData(team).cards(player);
+    };
+
+    this.currBook = function () {
+        return this._currBook;
+    };
+
+    this.currBookWinner = function () {
+        var first = this._currBook[0];
+        var others = this._currBook.slice(1, this._currBook.length);
+        return this._currBookWinnerHelper(first, others);
+    };
+
+    this.currPlayer = function () {
+        return this._currPlayer;
+    };
+
+    this.numBooks = function (team) {
+        return this.teamData(team).numBooks();
+    };
+
+    this.playableCards = function (team, player) {
+        var allCards = this.cards(team, player),
+            cBook = this._currBook,
+            spadesPlayed = this.spadesPlayed();
+        return this._playableCards(allCards, cBook, spadesPlayed);
+    };
+
+    this.points = function (team) {
+        return this.teamData(team).points();
+    };
+
+    this.spadesPlayed = function () {
+        return this._spadesPlayed;
+    };
+
+    this.teamData = function (team) {
+        return this['_' + team];
+    };
+
     this.turn = function () {
         return this._turn;
+    };
+
+    // setters
+
+    this.setCurrPlayer = function (team, player) {
+        this._currPlayer = {team: team, player: player};
+    };
+
+    this.setSpadesPlayed = function (val) {
+        this._spadesPlayed = val;
+    };
+
+    // others
+
+    this.addBook = function (team, book) {
+        this.teamData(team).addBook(book);
+    };
+
+    this.bidsComplete = function () {
+        return this._team0.bidComplete() && this._team1.bidComplete();
+    };
+
+    this.bookComplete = function () {
+        return this._currBook.length == 4;
+    };
+
+    this.clearCurrBook = function () {
+        this._currBook = [];
+    };
+
+    this.currBookComplete = function () {
+        return this._currBook.length == 4;
+    };
+
+    this.deal = function () {
+        var deck = new Deck(true),
+            one = [],
+            two = [],
+            three = [],
+            four = [];
+        while (!deck.empty()) {
+            one.push(deck.draw());
+            two.push(deck.draw());
+            three.push(deck.draw());
+            four.push(deck.draw());
+        }
+        this.teamData('team0').setCards('player0', one);
+        this.teamData('team1').setCards('player0', two);
+        this.teamData('team0').setCards('player1', three);
+        this.teamData('team1').setCards('player1', four);
+    };
+
+    this._currBookWinnerHelper = function (first, others) {
+        var winner = first;
+        others.forEach(function (play) {
+            var sameSuitAsFirst = play.card.suit() == first.card.suit(),
+                isSpade = play.card.suit(),
+                trumpsWinner = play.card.id > winner.card.id;
+            if ((sameSuitAsFirst || isSpade) && trumpsWinner) {
+                winner = play;
+            }
+        });
+        return winner;
     };
 
     this.incrementTurn = function () {
@@ -271,66 +393,6 @@ var RoundData = function (startingPlayer) {
 
     this.over = function () {
         return this.turn() > 13;
-    };
-
-    this.spadesPlayed = function () {
-        return this._spadesPlayed;
-    };
-
-    this.setSpadesPlayed = function (val) {
-        this._spadesPlayed = val;
-    };
-
-    this.currBook = function () {
-        return this._currBook;
-    };
-
-    this.clearCurrBook = function () {
-        this._currBook = [];
-    };
-
-    this.numBooks = function (team) {
-        return this.teamData(team).numBooks();
-    };
-
-    this.addBook = function (team, book) {
-        this.teamData(team).addBook(book);
-    };
-
-    this.bookComplete = function () {
-        return this._currBook.length == 4;
-    };
-
-    this.currPlayer = function () {
-        return this._currPlayer;
-    };
-
-    this.setCurrPlayer = function (team, player) {
-        this._currPlayer = {team: team, player: player};
-    };
-
-    this.teamData = function (team) {
-        return this['_' + team];
-    };
-
-    this.cards = function (team, player) {
-        return this.teamData(team).cards(player);
-    };
-
-    this.numBooks = function (team) {
-        return this.teamData(team).numBooks();
-    };
-
-    this.bid = function (team) {
-        return this.teamData(team).bid();
-    };
-
-    this.bidsComplete = function () {
-        return this._team0.bidComplete() && this._team1.bidComplete();
-    };
-
-    this.points = function (team) {
-        return this.teamData(team).points();
     };
 
     this.play = function (team, player, card) {
@@ -366,57 +428,10 @@ var RoundData = function (startingPlayer) {
         return playable;
     };
 
-    this.playableCards = function (team, player) {
-        var allCards = this.cards(team, player),
-            cBook = this._currBook,
-            spadesPlayed = this.spadesPlayed();
-        return this._playableCards(allCards, cBook, spadesPlayed);
-    };
-
-    this.currBookComplete = function () {
-        return this._currBook.length == 4;
-    };
-
-    this._bookWinner = function (first, others) {
-        var winner = first;
-        others.forEach(function (play) {
-            var sameSuitAsFirst = play.card.suit() == first.card.suit(),
-                isSpade = play.card.suit(),
-                trumpsWinner = play.card.id > winner.card.id;
-            if ((sameSuitAsFirst || isSpade) && trumpsWinner) {
-                winner = play;
-            }
-        });
-        return winner;
-    };
-
-    this.currBookWinner = function () {
-        var first = this._currBook[0];
-        var others = this._currBook.slice(1, this._currBook.length);
-        return this._bookWinner(first, others);
-    };
-
     this.rotatePlayer = function () {
         this._currPlayer = nextPlayer(this._currPlayer);
     };
 
-    this.deal = function () {
-        var deck = new Deck(true),
-            one = [],
-            two = [],
-            three = [],
-            four = [];
-        while (!deck.empty()) {
-            one.push(deck.draw());
-            two.push(deck.draw());
-            three.push(deck.draw());
-            four.push(deck.draw());
-        }
-        this.teamData('team0').setCards('player0', one);
-        this.teamData('team1').setCards('player0', two);
-        this.teamData('team0').setCards('player1', three);
-        this.teamData('team1').setCards('player1', four);
-    };
     this.deal();
 };
 
@@ -429,10 +444,7 @@ var GameData = function () {
     this._currTeam = "team0";
     this._currRound = new RoundData(this._startingPlayer);
 
-    this.resetRoundInfo = function () {
-        this._currRound = new RoundData(this._startingPlayer);
-        this.rotateStartingPlayer();
-    };
+    // getters
 
     this.bid = function (team) {
         return this._currRound.bid(team);
@@ -442,73 +454,85 @@ var GameData = function () {
         return this._currRound.cards(team, player);
     };
 
-    this.clearCurrBook = function () {
-        this._currRound.clearCurrBook();
+    this.currBookWinner = function () {
+        return this._currRound.currBookWinner();
+    };
+
+    this.currPlayer = function () {
+        return this._currRound.currPlayer();
+    };
+
+    this.currTeam = function () {
+        return this._currTeam;
     };
 
     this.numBooks = function (team) {
         return this._currRound.numBooks(team);
     };
 
-    this.addBook = function (team, book) {
-        this._currRound.addBook(team, book);
-    };
-
-    this.play = function (team, player, card) {
-        return this._currRound.play(team, player, card);
-    };
-
-    this.turn = function () {
-        return this._currRound.getTurn();
-    };
-
-    this.incrementTurn = function () {
-        this._currRound.incrementTurn();
-    };
-
-    this.bookComplete = function () {
-        return this._currRound.bookComplete();
-    };
-
-    this.currBookWinner = function () {
-        return this._currRound.currBookWinner();
-    };
-
-    this.score = function (team) {
-        return this._scores[team];
-    };
-
-    this.currRound = function () {
-        return this._currRound;
-    };
-
-    this.bidsComplete = function () {
-        return this._currRound.bidsComplete();
-    };
-
-    this.roundOver = function () {
-        this._currRound.over();
-    };
-
-    this._winner = function (team) {
-        return this.score(team) > this.MAX_SCORE;
-    };
-
-    this.over = function () {
-        return this._winner('team0') || this._winner('team1');
+    this.playableCards = function (team, player) {
+        return this._currRound.playableCards(team, player);
     };
 
     this.points = function (team) {
         return this.currRound().points(team);
     };
 
-    this.updateScore = function (team) {
-        this._scores[team] += this.points(team);
+    this.score = function (team) {
+        return this._scores[team];
     };
 
-    this.updateScores = function () {
-        this.updateScore('team0');
-        this.updateScore('team1');
+    this.turn = function () {
+        return this._currRound.getTurn();
+    };
+
+    // setters
+
+    this.setCurrPlayer = function (team, player) {
+        this._currRound.setCurrPlayer(team, player);
+    };
+
+    // others
+
+    this.addBook = function (team, book) {
+        this._currRound.addBook(team, book);
+    };
+
+    this.bidsComplete = function () {
+        return this._currRound.bidsComplete();
+    };
+
+    this.bookComplete = function () {
+        return this._currRound.bookComplete();
+    };
+
+    this.clearCurrBook = function () {
+        this._currRound.clearCurrBook();
+    };
+
+    this.currRound = function () {
+        return this._currRound;
+    };
+
+    this.incrementTurn = function () {
+        this._currRound.incrementTurn();
+    };
+
+    this._overHelper = function (team) {
+        return this.score(team) > this.MAX_SCORE;
+    };
+
+    this.over = function () {
+        return this._overHelper('team0') || this._overHelper('team1');
+    };
+
+    this.play = function (team, player, card) {
+        return this._currRound.play(team, player, card);
+    };
+
+    this.resetRoundInfo = function () {
+        this._currRound = new RoundData(this._startingPlayer);
+        this.rotateStartingPlayer();
     };
 
     this.rotatePlayer = function () {
@@ -527,24 +551,17 @@ var GameData = function () {
         }
     };
 
-    this.currTeam = function () {
-        return this._currTeam;
+    this.roundOver = function () {
+        this._currRound.over();
     };
 
-    this.currPlayer = function () {
-        return this._currRound.currPlayer();
+    this.updateScore = function (team) {
+        this._scores[team] += this.points(team);
     };
 
-    this.setCurrPlayer = function (team, player) {
-        this._currRound.setCurrPlayer(team, player);
-    };
-
-    this.bid = function (team) {
-        return this._currRound.bid(team);
-    };
-
-    this.playableCards = function (team, player) {
-        return this._currRound.playableCards(team, player);
+    this.updateScores = function () {
+        this.updateScore('team0');
+        this.updateScore('team1');
     };
 };
 

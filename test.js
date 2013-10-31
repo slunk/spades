@@ -234,7 +234,7 @@ describe("RoundData: ", function () {
         it("should return the highest card played if all same suit", function (done) {
             var first = threeOfHearts,
                 others = [fourOfHearts, fiveOfHearts, sixOfHearts];
-            assert.equal(round._bookWinner(first, others), sixOfHearts);
+            assert.equal(round._currBookWinnerHelper(first, others), sixOfHearts);
             done();
         });
 
